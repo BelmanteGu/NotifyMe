@@ -36,6 +36,7 @@ src/
 │   ├── ReminderCard.vue          ← card de lembrete na lista
 │   ├── ReminderModal.vue         ← modal de criar lembrete
 │   ├── Sidebar.vue               ← navegação lateral (4 views)
+│   ├── StickyNote.vue            ← nota adesiva individual (drag, color picker)
 │   ├── ThemeToggle.vue           ← botão Sun/Moon
 │   ├── TitleBar.vue              ← barra de título customizada
 │   └── ui/
@@ -46,10 +47,11 @@ src/
 │   ├── RemindersView.vue         ← lista de lembretes (tabs Pendentes/Concluídos)
 │   ├── TimerView.vue             ← countdown timer com presets + custom MM:SS
 │   ├── StopwatchView.vue         ← cronômetro contando pra cima
-│   ├── SettingsView.vue          ← Configurações (toggle widget, etc)
+│   ├── SettingsView.vue          ← Configurações (toggles widget e notes)
 │   ├── AlertView.vue             ← janela de alerta de lembrete (separada)
 │   ├── TimerAlertView.vue        ← janela de alarme do timer (loop)
-│   └── WidgetView.vue            ← widget flutuante always-on-top
+│   ├── WidgetView.vue            ← widget flutuante always-on-top
+│   └── NotesCanvasView.vue       ← overlay transparente com sticky notes
 │
 ├── composables/                  ← state + lógica reativa
 │   ├── useTheme.ts               ← light/dark + localStorage
@@ -57,12 +59,14 @@ src/
 │   ├── useTimer.ts               ← stub IPC pro TimerService no Main
 │   ├── useStopwatch.ts           ← stub IPC pro StopwatchService no Main
 │   ├── useSettings.ts            ← stub IPC pra configurações
-│   └── useConfirm.ts             ← dialog de confirmação singleton
+│   ├── useConfirm.ts             ← dialog de confirmação singleton
+│   └── useNotes.ts               ← stub IPC das sticky notes
 │
 ├── types/                        ← tipos TypeScript compartilhados
 │   ├── reminder.ts               ← Reminder, Recurrence, etc
 │   ├── timer.ts                  ← TimerState, StopwatchState
 │   ├── settings.ts               ← Settings + DEFAULT_SETTINGS
+│   ├── note.ts                   ← Note, NoteColor, COLOR_PALETTES
 │   └── api.ts                    ← NotifyMeAPI (window.notifyme contract)
 │
 └── utils/                        ← funções puras

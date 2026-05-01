@@ -11,6 +11,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { Reminder, ReminderInput } from '../src/types/reminder'
 import type { TimerState, StopwatchState } from '../src/types/timer'
 import type { Settings } from '../src/types/settings'
+import type { Note, NoteInput, NotePatch } from '../src/types/note'
 import type { NotifyMeAPI } from '../src/types/api'
 
 const api: NotifyMeAPI = {
@@ -76,6 +77,26 @@ const api: NotifyMeAPI = {
         ipcRenderer.removeListener('stopwatch:tick', handler)
       }
     },
+  },
+
+  notes: {
+    list: (): Promise<Note[]> => ipcRenderer.invoke('notes:list'),
+    create: (input: NoteInput): Promise<Note> =>
+      ipcRenderer.invoke('notes:create', input),
+    update: (id: string, patch: NotePatch): Promise<Note | null> =>
+      ipcRenderer.invoke('notes:update', id, patch),
+    delete: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke('notes:delete', id),
+    clear: (): Promise<number> => ipcRenderer.invoke('notes:clear'),
+    onChanged: (callback) => {
+      const handler = () => callback()
+      ipcRenderer.on('notes:changed', handler)
+      return () => {
+        ipcRenderer.removeListener('notes:changed', handler)
+      }
+    },
+    setMouseInteractive: (interactive: boolean) =>
+      ipcRenderer.send('notes:setMouseInteractive', interactive),
   },
 
   settings: {

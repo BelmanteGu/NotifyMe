@@ -7,6 +7,29 @@ versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Adicionado (Feature C — sticky notes)
+- **Sticky notes** (`src/views/NotesCanvasView.vue`, `src/components/StickyNote.vue`) — post-its espalhados na tela via canvas window transparente fullscreen always-on-top.
+- **6 cores** por nota (amarelo, rosa, azul, verde, laranja, roxo) com paleta light/dark.
+- **Drag & drop** com animação bouncy de "papel balançando" ao soltar (CSS cubic-bezier).
+- **Rotação base aleatória** (-3° a +3°) por nota — parece "espalhado naturalmente".
+- **Texto editável inline** com debounce de 400ms (evita IPC excessivo durante digitação).
+- **Color picker** popover por nota (botão Palette no header da nota).
+- **Botão "+"** flutuante no canto inferior direito da canvas pra criar novas.
+- **Mouse pass-through** dinâmico via `setIgnoreMouseEvents(true, { forward: true })` — clicks atravessam onde não tem nota, capturam onde tem.
+- **Notes store** (`electron/store/notes.ts`) — `notes.json` separado.
+- **NotesService** (`electron/services/notes.ts`) — CRUD com EventEmitter.
+- **Composable `useNotes`** — stub IPC + cache reativo.
+- **Toggle em Configurações** "Espalhar notas adesivas na tela".
+- 2 docs novos:
+  - `docs/14-sticky-notes.md`
+  - `docs/decisoes/005-sticky-notes-canvas-vs-windows.md`
+- **Decisão arquitetural**: 1 canvas window com todas as notas como divs (≈50MB) em vez de 1 BrowserWindow por nota (~500MB com 10 notas).
+
+### Modificado (AboutModal)
+- **Removido** botões Ko-fi e GitHub Sponsors. Apenas PIX agora.
+- Botão único "Copiar chave PIX" full-width com feedback visual ("Chave copiada!" por 2s).
+- CNPJ visível abaixo do botão (selectable, monospace).
+
 ### Adicionado (Feature B — widget flutuante)
 - **Widget flutuante** (`src/views/WidgetView.vue`) — BrowserWindow pequena always-on-top que aparece quando timer ou cronômetro estão rodando. Mostra o tempo em tempo real, movível e redimensionável.
 - **Configurações** (`src/views/SettingsView.vue`) — nova page na sidebar com toggle "Mostrar widget quando algo estiver rodando".

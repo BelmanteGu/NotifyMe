@@ -38,6 +38,15 @@ App desktop pequeno e gratuito, com **3 funcionalidades** integradas:
 - Movível, redimensionável, posição persistida entre sessões
 - Toggle em **Configurações** pra ligar/desligar
 
+### 📝 Sticky notes
+- Post-its visuais espalhados na tela, sempre por cima de tudo
+- 6 cores selecionáveis por nota
+- Drag & drop com animação de papel balançando ao soltar
+- Cada nota tem texto editável inline
+- Botão "+" pra criar novas
+- Tudo persistido entre sessões
+- Toggle em **Configurações**
+
 ## Outras features
 
 - **Tray icon + auto-start com Windows** — app fica rodando em background, lembretes disparam mesmo com janela fechada
@@ -121,12 +130,14 @@ A pasta [`docs/`](docs/) tem documentação densa e didática de cada parte do p
 - [11 — Timer e Cronômetro](docs/11-timer-e-cronometro.md) — services no Main + Web Audio
 - [12 — Title bar customizada](docs/12-title-bar-customizada.md) — frame:false + IPC controls
 - [13 — Widget flutuante](docs/13-floating-widget.md) — BrowserWindow always-on-top
+- [14 — Sticky notes](docs/14-sticky-notes.md) — canvas window transparente
 
 ### Decisões arquiteturais (ADRs)
 - [001 — electron-store em vez de SQLite](docs/decisoes/001-electron-store-vs-sqlite.md)
 - [002 — frame:false e título customizado](docs/decisoes/002-frame-false-titulo-customizado.md)
 - [003 — Select customizado em vez de nativo](docs/decisoes/003-select-customizado.md)
 - [004 — Widget flutuante e state no Main](docs/decisoes/004-floating-widget.md)
+- [005 — Sticky notes: canvas única vs múltiplas janelas](docs/decisoes/005-sticky-notes-canvas-vs-windows.md)
 
 ## SmartScreen warning ao instalar
 

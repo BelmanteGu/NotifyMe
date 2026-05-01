@@ -408,6 +408,32 @@ nativa mas mantém área pra controles customizados. Combinado com
 
 ---
 
+### Notes / Sticky notes
+
+Post-its visuais espalhados na tela via uma canvas window transparente
+fullscreen. Cada nota tem cor, texto editável, posição e rotação base
+aleatória pra parecer natural. Veja [14-sticky-notes.md](14-sticky-notes.md).
+
+---
+
+### NotesService
+
+Service no Main process que faz CRUD das notas em `notes.json` via
+electron-store. Emite `'changed'` event quando muda algo, que o
+main.ts repassa via broadcast `notes:changed` pra todas as janelas.
+
+---
+
+### setIgnoreMouseEvents
+
+API do Electron que faz uma janela ignorar (ou capturar) eventos de
+mouse. Com `forward: true`, mouse move/hover ainda chegam ao Renderer
+mas physical clicks atravessam pra app de baixo. Usado na canvas das
+sticky notes pra permitir click-through em áreas vazias e captura nas
+notas.
+
+---
+
 ### Settings (configurações)
 
 Preferências do app persistidas em `%APPDATA%\notifyme\settings.json`

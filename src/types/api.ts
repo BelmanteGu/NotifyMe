@@ -1,6 +1,7 @@
 import type { Reminder, ReminderInput } from './reminder'
 import type { TimerState, StopwatchState } from './timer'
 import type { Settings } from './settings'
+import type { Note, NoteInput, NotePatch } from './note'
 
 /**
  * Contrato da API exposta pelo preload em window.notifyme.
@@ -57,6 +58,21 @@ export interface NotifyMeAPI {
     pause: () => void
     reset: () => void
     onTick: (callback: (state: StopwatchState) => void) => () => void
+  }
+
+  /**
+   * Notas adesivas (sticky notes) espalhadas na tela.
+   * State no Main, broadcast via 'notes:changed' pra todas as janelas.
+   */
+  notes: {
+    list: () => Promise<Note[]>
+    create: (input: NoteInput) => Promise<Note>
+    update: (id: string, patch: NotePatch) => Promise<Note | null>
+    delete: (id: string) => Promise<boolean>
+    clear: () => Promise<number>
+    onChanged: (callback: () => void) => () => void
+    /** Liga/desliga captura de mouse na canvas (chamar em hover enter/leave). */
+    setMouseInteractive: (interactive: boolean) => void
   }
 
   /**

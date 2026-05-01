@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Bell, X, Github, Heart, Bug, Check } from 'lucide-vue-next'
+import { Bell, X, Github, Heart, Bug, Check, Copy } from 'lucide-vue-next'
 import pkg from '../../package.json'
 
 defineProps<{
@@ -14,8 +14,6 @@ const emit = defineEmits<{
 const version = pkg.version
 const repoUrl = 'https://github.com/BelmanteGu/notifyme'
 const issuesUrl = `${repoUrl}/issues`
-const sponsorsUrl = 'https://github.com/sponsors/BelmanteGu'
-const kofiUrl = 'https://ko-fi.com/belmantegu'
 const pixKey = '65.516.621/0001-78'
 
 const pixCopied = ref(false)
@@ -113,33 +111,22 @@ async function copyPix() {
             </div>
             <p class="text-xs text-muted-foreground mb-4 leading-relaxed">
               O NotifyMe é 100% gratuito. Se ele te ajuda no dia a dia,
-              considere uma doação. Ajuda a manter o projeto ativo.
+              considere uma doação via PIX — ajuda a manter o projeto ativo.
             </p>
-            <div class="grid grid-cols-3 gap-2">
-              <button
-                @click="copyPix"
-                class="px-3 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold transition inline-flex items-center justify-center gap-1.5"
-                :class="{ 'border-primary text-primary': pixCopied }"
-                :title="`Clique para copiar: ${pixKey}`"
-              >
-                <Check v-if="pixCopied" class="w-3 h-3" />
-                {{ pixCopied ? 'Copiado!' : 'PIX' }}
-              </button>
-              <button
-                @click="openLink(kofiUrl)"
-                class="btn-primary px-3 py-2.5 rounded-xl text-primary-foreground text-xs font-semibold"
-              >
-                Ko-fi
-              </button>
-              <button
-                @click="openLink(sponsorsUrl)"
-                class="px-3 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold transition"
-              >
-                Sponsors
-              </button>
-            </div>
-            <p class="text-[11px] text-muted-foreground text-center mt-3 font-mono">
-              PIX (CNPJ): {{ pixKey }}
+
+            <button
+              @click="copyPix"
+              class="w-full px-4 py-3 rounded-xl border bg-card hover:bg-muted transition inline-flex items-center justify-center gap-2 text-sm font-semibold"
+              :class="pixCopied ? 'border-primary text-primary' : 'border-border'"
+              :title="`Clique para copiar: ${pixKey}`"
+            >
+              <Check v-if="pixCopied" class="w-4 h-4" />
+              <Copy v-else class="w-4 h-4" />
+              {{ pixCopied ? 'Chave copiada!' : 'Copiar chave PIX' }}
+            </button>
+
+            <p class="text-[11px] text-muted-foreground text-center mt-3 font-mono select-text">
+              CNPJ: {{ pixKey }}
             </p>
           </div>
 
