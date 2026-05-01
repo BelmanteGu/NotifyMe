@@ -32,4 +32,9 @@ export interface NotifyMeAPI {
      */
     onChanged: (callback: () => void) => () => void
   }
+
+  system: {
+    /** Abre uma URL HTTP/HTTPS no navegador padrão do usuário (não no Electron). */
+    openExternal: (url: string) => Promise<void>
+  }
 }

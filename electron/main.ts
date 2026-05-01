@@ -8,7 +8,7 @@
  * docs/05-agendamento.md, docs/07-tray-e-autostart.md.
  */
 
-import { app, BrowserWindow, dialog } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getStore } from './store'
@@ -146,6 +146,17 @@ function initialize() {
     )
 
     registerRemindersIPC(remindersService, scheduler, notifyRendererChanged)
+
+    // Handler genérico pra abrir URLs externas no navegador padrão.
+    // Validação: só http/https — bloqueia file://, javascript:, etc
+    // (defesa contra XSS escapando do Renderer).
+    ipcMain.handle('system:openExternal', (_event, url: string) => {
+      if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
+        console.warn('[ipc] openExternal recusou URL invalida:', url)
+        return
+      }
+      shell.openExternal(url)
+    })
 
     createMainWindow()
 

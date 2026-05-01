@@ -42,6 +42,11 @@ const api: NotifyMeAPI = {
       }
     },
   },
+
+  system: {
+    openExternal: (url: string): Promise<void> =>
+      ipcRenderer.invoke('system:openExternal', url),
+  },
 }
 
 contextBridge.exposeInMainWorld('notifyme', api)

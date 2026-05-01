@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Bell, Plus, Trash2 } from 'lucide-vue-next'
+import { Bell, Plus, Trash2, Info } from 'lucide-vue-next'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import ReminderCard from '@/components/ReminderCard.vue'
 import ReminderModal from '@/components/ReminderModal.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import AboutModal from '@/components/AboutModal.vue'
 import { useReminders } from '@/composables/useReminders'
+import pkg from '../package.json'
 
 const {
   reminders,
@@ -19,12 +21,15 @@ const {
 } = useReminders()
 
 const modalOpen = ref(false)
+const aboutOpen = ref(false)
 type Tab = 'pending' | 'completed'
 const currentTab = ref<Tab>('pending')
 
 const visibleList = computed(() =>
   currentTab.value === 'pending' ? reminders.value : completed.value
 )
+
+const version = pkg.version
 
 async function handleClearCompleted() {
   if (completed.value.length === 0) return
@@ -55,6 +60,15 @@ async function handleClearCompleted() {
         </div>
 
         <div class="flex items-center gap-2">
+          <button
+            @click="aboutOpen = true"
+            class="w-9 h-9 inline-flex items-center justify-center rounded-md border border-border bg-background hover:bg-muted transition"
+            aria-label="Sobre o NotifyMe"
+            title="Sobre"
+          >
+            <Info class="w-4 h-4" />
+          </button>
+
           <ThemeToggle />
 
           <button
@@ -71,7 +85,6 @@ async function handleClearCompleted() {
     <main class="flex-1 max-w-5xl mx-auto w-full px-6 py-8">
       <h2 class="text-2xl font-bold font-heading mb-4">Meus lembretes</h2>
 
-      <!-- Tabs -->
       <div class="flex items-center justify-between mb-6 border-b border-border">
         <div class="flex">
           <button
@@ -137,7 +150,6 @@ async function handleClearCompleted() {
         </button>
       </div>
 
-      <!-- Estados de carregamento e erro -->
       <div
         v-if="error"
         class="mb-4 p-4 rounded-md border border-destructive bg-destructive/10 text-destructive text-sm"
@@ -149,14 +161,12 @@ async function handleClearCompleted() {
         Carregando…
       </div>
 
-      <!-- Empty states por tab -->
       <EmptyState
         v-else-if="visibleList.length === 0"
         :variant="currentTab"
         @create="modalOpen = true"
       />
 
-      <!-- Lista -->
       <div v-else class="space-y-3">
         <ReminderCard
           v-for="reminder in visibleList"
@@ -170,10 +180,15 @@ async function handleClearCompleted() {
 
     <footer class="border-t border-border bg-card">
       <div
-        class="max-w-5xl mx-auto px-6 py-4 text-xs text-muted-foreground flex justify-between"
+        class="max-w-5xl mx-auto px-6 py-4 text-xs text-muted-foreground flex justify-between items-center"
       >
-        <span>NotifyMe v0.0.1 — Fase 3</span>
-        <span>github.com/BelmanteGu/notifyme</span>
+        <span>NotifyMe v{{ version }}</span>
+        <button
+          @click="aboutOpen = true"
+          class="hover:text-foreground transition"
+        >
+          github.com/BelmanteGu/notifyme
+        </button>
       </div>
     </footer>
 
@@ -181,5 +196,7 @@ async function handleClearCompleted() {
       v-model:open="modalOpen"
       @save="(input) => create(input)"
     />
+
+    <AboutModal v-model:open="aboutOpen" />
   </div>
 </template>
