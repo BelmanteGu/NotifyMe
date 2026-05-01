@@ -2,6 +2,21 @@ import type { Reminder, ReminderInput } from './reminder'
 import type { TimerState, StopwatchState } from './timer'
 import type { Settings } from './settings'
 import type { Note, NoteInput, NotePatch } from './note'
+import type { TaskList, TaskListInput, TaskListPatch } from './list'
+
+interface ExportMdResult {
+  success: boolean
+  path?: string
+  reason?: 'not_found' | 'canceled' | 'write_failed'
+  message?: string
+}
+
+interface ImportMdResult {
+  success: boolean
+  list?: TaskList
+  reason?: 'canceled' | 'parse_failed'
+  message?: string
+}
 
 /**
  * Contrato da API exposta pelo preload em window.notifyme.
@@ -70,6 +85,28 @@ export interface NotifyMeAPI {
     update: (id: string, patch: NotePatch) => Promise<Note | null>
     delete: (id: string) => Promise<boolean>
     clear: () => Promise<number>
+    onChanged: (callback: () => void) => () => void
+  }
+
+  /**
+   * Listas de tarefas / to-do (formato caderno multi-página).
+   * Suporta export/import .md via dialog nativo do SO.
+   */
+  lists: {
+    list: () => Promise<TaskList[]>
+    create: (input: TaskListInput) => Promise<TaskList>
+    update: (id: string, patch: TaskListPatch) => Promise<TaskList | null>
+    delete: (id: string) => Promise<boolean>
+    addItem: (listId: string, text: string) => Promise<TaskList | null>
+    toggleItem: (listId: string, itemId: string) => Promise<TaskList | null>
+    updateItem: (
+      listId: string,
+      itemId: string,
+      text: string
+    ) => Promise<TaskList | null>
+    removeItem: (listId: string, itemId: string) => Promise<TaskList | null>
+    exportMd: (listId: string) => Promise<ExportMdResult>
+    importMd: () => Promise<ImportMdResult>
     onChanged: (callback: () => void) => () => void
   }
 

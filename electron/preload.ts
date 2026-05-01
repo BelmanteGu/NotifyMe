@@ -12,6 +12,11 @@ import type { Reminder, ReminderInput } from '../src/types/reminder'
 import type { TimerState, StopwatchState } from '../src/types/timer'
 import type { Settings } from '../src/types/settings'
 import type { Note, NoteInput, NotePatch } from '../src/types/note'
+import type {
+  TaskList,
+  TaskListInput,
+  TaskListPatch,
+} from '../src/types/list'
 import type { NotifyMeAPI } from '../src/types/api'
 
 const api: NotifyMeAPI = {
@@ -93,6 +98,34 @@ const api: NotifyMeAPI = {
       ipcRenderer.on('notes:changed', handler)
       return () => {
         ipcRenderer.removeListener('notes:changed', handler)
+      }
+    },
+  },
+
+  lists: {
+    list: (): Promise<TaskList[]> => ipcRenderer.invoke('lists:list'),
+    create: (input: TaskListInput): Promise<TaskList> =>
+      ipcRenderer.invoke('lists:create', input),
+    update: (id: string, patch: TaskListPatch) =>
+      ipcRenderer.invoke('lists:update', id, patch),
+    delete: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke('lists:delete', id),
+    addItem: (listId: string, text: string) =>
+      ipcRenderer.invoke('lists:addItem', listId, text),
+    toggleItem: (listId: string, itemId: string) =>
+      ipcRenderer.invoke('lists:toggleItem', listId, itemId),
+    updateItem: (listId: string, itemId: string, text: string) =>
+      ipcRenderer.invoke('lists:updateItem', listId, itemId, text),
+    removeItem: (listId: string, itemId: string) =>
+      ipcRenderer.invoke('lists:removeItem', listId, itemId),
+    exportMd: (listId: string) =>
+      ipcRenderer.invoke('lists:exportMd', listId),
+    importMd: () => ipcRenderer.invoke('lists:importMd'),
+    onChanged: (callback) => {
+      const handler = () => callback()
+      ipcRenderer.on('lists:changed', handler)
+      return () => {
+        ipcRenderer.removeListener('lists:changed', handler)
       }
     },
   },

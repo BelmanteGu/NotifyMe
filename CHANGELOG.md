@@ -7,6 +7,28 @@ versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Adicionado (Listas / to-do estilo caderno)
+- **Aba "Listas"** na sidebar (entre Notas e Configurações).
+- **TaskList** com título + data + itens checáveis.
+- **Visual papel pautado** (linhas horizontais a cada 32px) + margem vermelha lateral, estilo caderno escolar. Adapta light/dark.
+- **Paginação**: ← anterior / próxima →, com indicador "Página X de N".
+- **Export `.md`**: salva lista atual como markdown via `dialog.showSaveDialog` nativo. Default name: `YYYY-MM-DD-slug.md`.
+- **Import `.md`**: abre arquivo via `dialog.showOpenDialog`, parsea title + data + items checados/pendentes. Parser tolerante (ignora linhas que não casam).
+- **Formato compatível** com Obsidian, Bear, Logseq, etc:
+  ```md
+  # Título
+  Data: 01/05/2026
+  - [x] Item feito
+  - [ ] Item pendente
+  ```
+- **Add item**: input no fim da lista, Enter cria + autofoca pro próximo.
+- **Toggle checkbox**, edit inline, remove (botão X em hover).
+- **Apagar lista** com ConfirmDialog destructive.
+- 1 doc nova: `docs/15-listas.md`.
+
+### Modificado (EmptyState)
+- **Animação no ícone "Concluídos"**: CheckCheck agora tem `animate-check-pulse` (scale 1 → 1.15 → 1.04 em loop). Antes era estático. Pending mantém `animate-bell-ring` original.
+
 ### Adicionado (Feature C — sticky notes)
 - **Aba "Notas"** na sidebar (`src/views/NotesView.vue`) — board interno onde o usuário cria, arrasta e edita post-its coloridos. View normal da janela main, não overlay.
 - **StickyNote** (`src/components/StickyNote.vue`) — nota individual com 6 cores, texto editável inline, drag & drop com animação bouncy de "papel balançando".

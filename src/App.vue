@@ -6,6 +6,7 @@ import RemindersView from '@/views/RemindersView.vue'
 import TimerView from '@/views/TimerView.vue'
 import StopwatchView from '@/views/StopwatchView.vue'
 import NotesView from '@/views/NotesView.vue'
+import ListsView from '@/views/ListsView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import AboutModal from '@/components/AboutModal.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -29,6 +30,7 @@ const aboutOpen = ref(false)
         <TimerView v-else-if="currentView === 'timer'" class="h-full overflow-y-auto scroll-overlay" />
         <StopwatchView v-else-if="currentView === 'stopwatch'" class="h-full overflow-y-auto scroll-overlay" />
         <NotesView v-else-if="currentView === 'notes'" />
+        <ListsView v-else-if="currentView === 'lists'" />
         <SettingsView v-else-if="currentView === 'settings'" class="h-full overflow-y-auto scroll-overlay" />
       </main>
     </div>

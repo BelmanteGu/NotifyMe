@@ -27,7 +27,12 @@ const description = computed(() =>
     : 'Crie seu primeiro lembrete e ele vai te avisar na hora certa. Não some até você confirmar.'
 )
 const showCreateButton = computed(() => props.variant === 'pending')
-const isAnimated = computed(() => props.variant === 'pending')
+
+const animationClass = computed(() => {
+  if (props.variant === 'pending') return 'animate-bell-ring'
+  if (props.variant === 'completed') return 'animate-check-pulse'
+  return ''
+})
 </script>
 
 <template>
@@ -42,7 +47,7 @@ const isAnimated = computed(() => props.variant === 'pending')
         <component
           :is="Icon"
           class="w-10 h-10"
-          :class="{ 'animate-bell-ring': isAnimated }"
+          :class="animationClass"
         />
       </div>
     </div>

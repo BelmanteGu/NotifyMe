@@ -23,6 +23,9 @@ import { openWidgetWindow, closeWidgetWindow, isWidgetOpen } from './windows/wid
 import { NotesService } from './services/notes'
 import { getNotesStore } from './store/notes'
 import { registerNotesIPC } from './ipc/notes'
+import { ListsService } from './services/lists'
+import { getListsStore } from './store/lists'
+import { registerListsIPC } from './ipc/lists'
 import { createTray, destroyTray } from './tray'
 import type Store from 'electron-store'
 import type { Settings } from '../src/types/settings'
@@ -152,6 +155,10 @@ function notifyNotesChanged() {
   broadcastToAllWindows('notes:changed')
 }
 
+function notifyListsChanged() {
+  broadcastToAllWindows('lists:changed')
+}
+
 // ─── Widget orchestration ─────────────────────────────────────────
 let lastWidgetMode: 'timer' | 'stopwatch' | null = null
 
@@ -225,6 +232,15 @@ function initialize() {
     const notesStore = getNotesStore()
     const notesService = new NotesService(notesStore)
     registerNotesIPC(notesService, notifyNotesChanged)
+
+    // Lists — service + IPC + import/export .md via dialog
+    const listsStore = getListsStore()
+    const listsService = new ListsService(listsStore)
+    registerListsIPC({
+      service: listsService,
+      onChange: notifyListsChanged,
+      getMainWindow: () => mainWin,
+    })
 
     // ─── Timer + Cronômetro ──────────────────────────────
     timerService = new TimerService()

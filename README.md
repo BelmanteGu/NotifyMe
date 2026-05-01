@@ -40,11 +40,21 @@ App desktop pequeno e gratuito, com **3 funcionalidades** integradas:
 
 ### 📝 Sticky notes
 - Aba "Notas" com um board interno onde você cria post-its coloridos
-- 6 cores selecionáveis por nota (amarelo, rosa, azul, verde, laranja, roxo)
+- 6 cores selecionáveis por nota (amarelo, rosa, azul, verde, laranja, roxo) + cor personalizada via color picker do sistema
 - Drag & drop dentro do board com animação de papel balançando ao soltar
 - Cada nota tem texto editável inline
 - Botão "Nova nota" pra criar
 - Tudo persistido entre sessões em `notes.json`
+- Última nota arrastada vai pro topo automaticamente (sort por updatedAt)
+
+### 📋 Listas (to-do)
+- Aba "Listas" com páginas estilo caderno (papel pautado + margem vermelha)
+- Cada lista é uma página: título + data + itens checáveis
+- Navegação entre páginas (← anterior / próxima →)
+- Adicionar item via Enter, marcar com checkbox, editar inline
+- **Exportar** lista atual pra arquivo `.md` (dialog nativo do SO)
+- **Importar** `.md` existente — cria nova lista a partir do arquivo
+- Formato `.md` simples e padrão (compatível com Obsidian, Bear, etc)
 
 ## Outras features
 
@@ -129,7 +139,8 @@ A pasta [`docs/`](docs/) tem documentação densa e didática de cada parte do p
 - [11 — Timer e Cronômetro](docs/11-timer-e-cronometro.md) — services no Main + Web Audio
 - [12 — Title bar customizada](docs/12-title-bar-customizada.md) — frame:false + IPC controls
 - [13 — Widget flutuante](docs/13-floating-widget.md) — BrowserWindow always-on-top
-- [14 — Sticky notes](docs/14-sticky-notes.md) — canvas window transparente
+- [14 — Sticky notes](docs/14-sticky-notes.md) — board interno com cores
+- [15 — Listas (to-do)](docs/15-listas.md) — páginas tipo caderno + import/export .md
 
 ### Decisões arquiteturais (ADRs)
 - [001 — electron-store em vez de SQLite](docs/decisoes/001-electron-store-vs-sqlite.md)

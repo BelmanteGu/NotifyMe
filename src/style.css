@@ -239,6 +239,17 @@
     transform-origin: top center;
   }
 
+  /* Check pulsa suavemente — usado no EmptyState 'completed' */
+  @keyframes check-pulse {
+    0%, 100% { transform: scale(1); }
+    40% { transform: scale(1.15); }
+    65% { transform: scale(1.04); }
+  }
+
+  .animate-check-pulse {
+    animation: check-pulse 2.4s ease-in-out infinite;
+  }
+
   /* Pulse suave pro alerta */
   @keyframes glow-pulse {
     0%, 100% {
