@@ -1,6 +1,6 @@
 # NotifyMe
 
-> Lembretes desktop persistentes para Windows. Notificações que **não somem** até você confirmar.
+> Lembretes desktop persistentes para Windows. Notificações que **não somem** até você confirmar. Inclui também Timer (Pomodoro) e Cronômetro.
 
 ![Status](https://img.shields.io/badge/status-MVP%20funcional-orange)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows%2010%2F11-blue)
@@ -11,30 +11,47 @@
 
 O Windows tem notificações, mas todas somem em ~5 segundos. Pra lembretes críticos — "fechar o caixa às 18h", "ligar pro fornecedor", "pagar o DAS do MEI" — isso não funciona. Você precisa de algo que **fique visível até você reconhecer**.
 
-Apps que existem hoje:
-- **Microsoft To Do** — notificação some como qualquer outra
-- **Cortana / Alarmes** — mesma limitação
-- **Task Scheduler do Windows** — solução técnica complexa demais pra usuário leigo
-
 ## A solução
 
-Um app desktop pequeno e gratuito que:
+App desktop pequeno e gratuito, com **3 funcionalidades** integradas:
 
+### 🔔 Lembretes que não somem
 - Cria lembretes com data, hora, descrição e recorrência (uma vez / todo dia / toda semana)
 - Quando dispara, abre uma **janela `always-on-top` sem botão de fechar** — só "Concluído" e "Adiar 10 min"
-- Roda silencioso na bandeja do sistema
-- Inicia junto com o Windows
-- Tudo offline, dados locais, zero login, zero servidor
+- Visual estilo macOS Sequoia (glassmorphism, cantos arredondados, gradient sutil)
+- Estado "atrasado" destacado em vermelho pra lembretes pendentes que passaram do horário
+
+### ⏲️ Timer (Pomodoro)
+- Presets rápidos: 5, 10, 15, 25, 50, 90 min
+- **Input personalizado** pra qualquer duração (1-999 min)
+- Display circular animado com progress ring
+- Som ao zerar (chime gerado via Web Audio API, sem arquivo externo)
+
+### ⏱️ Cronômetro
+- Conta pra cima com precisão de centésimos
+- Start / Pause / Reset
+- Anti-drift (usa `Date.now() - startedAt` em vez de `+= ms`)
+
+## Outras features
+
+- **Tray icon + auto-start com Windows** — app fica rodando em background, lembretes disparam mesmo com janela fechada
+- **Title bar customizada** estilo macOS (sem barra cinza nativa do Windows)
+- **Tema light/dark** com toggle no app, detecta preferência do SO no primeiro boot
+- **Tudo offline** — dados em `%APPDATA%\notifyme\data.json`, zero login, zero servidor
+- **Modais de confirmação nativos** do sistema (`dialog.showMessageBox`, não `window.confirm()` feio)
+- **Dropdown custom** com Teleport (sempre por cima de modais, sem corte de overflow)
 
 ## Stack
 
-- **[Electron 33](https://www.electronjs.org/)** — empacota um app web como desktop
-- **[Vue 3](https://vuejs.org/)** + **TypeScript** — UI
-- **[Vite 6](https://vite.dev/)** — build e dev server
-- **[Tailwind 3](https://tailwindcss.com/)** — estilização (paleta laranja, sistema HSL light/dark)
+- **[Electron 33](https://www.electronjs.org/)** + **[Vue 3](https://vuejs.org/)** + **TypeScript**
+- **[Vite 6](https://vite.dev/)** com `vite-plugin-electron`
+- **[Tailwind 3](https://tailwindcss.com/)** com sistema HSL light/dark inspirado em shadcn-vue
 - **[electron-store](https://github.com/sindresorhus/electron-store)** — persistência JSON com escrita atômica
 - **[lucide-vue-next](https://lucide.dev/)** — ícones
-- **[electron-builder](https://www.electron.build/)** — empacotamento `.exe`
+- **[electron-builder](https://www.electron.build/)** — empacotamento `.exe` (NSIS + portable)
+- **Web Audio API** — sons de alarme gerados programaticamente
+
+Bundle final: **~40KB gzip** (Renderer) + **~12KB** (Main) + Electron runtime (~80MB no `.exe`).
 
 ## Como rodar em desenvolvimento
 
@@ -55,7 +72,7 @@ npm run dist:portable # só portable (single-file .exe)
 npm run dist:dir      # só pasta unpacked (rápido pra testar)
 ```
 
-Output em `release/0.0.1/`. Veja [docs/08-build-e-release.md](docs/08-build-e-release.md) pra detalhes.
+Output em `release/0.0.1/`. Veja [docs/08-build-e-release.md](docs/08-build-e-release.md) pra detalhes (incluindo a pegadinha do "Cannot create symbolic link" no Windows e como resolver).
 
 ## Roadmap
 
@@ -69,23 +86,37 @@ Output em `release/0.0.1/`. Veja [docs/08-build-e-release.md](docs/08-build-e-re
 | 5 | Tray + auto-iniciar com Windows | ✅ |
 | 6 | Build `.exe` + scripts de release | ✅ |
 | 7 | Polimento (versão dinâmica, dialog Sobre, doação) | ✅ |
+| Extra | Redesign visual glassmorphism Apple-like | ✅ |
+| Extra | Timer + Cronômetro + Som via Web Audio | ✅ |
+| Extra | Title bar customizada + scrollbar custom | ✅ |
+| Extra | Select com Teleport + modal de confirmação nativo | ✅ |
 | — | Ícones próprios + screenshots + smoke-test | 🚧 |
 
 ## Documentação
 
 A pasta [`docs/`](docs/) tem documentação densa e didática de cada parte do projeto:
 
+### Conceitos
 - [00 — Visão geral](docs/00-visao-geral.md) — motivação, decisões grandes, persona-alvo
 - [01 — Arquitetura do Electron](docs/01-arquitetura-electron.md) — Main vs Renderer, Preload, IPC
-- [02 — Vue dentro do Electron](docs/02-vue-dentro-electron.md) — como Vue + Vite + Tailwind se encaixam
+- [02 — Vue dentro do Electron](docs/02-vue-dentro-electron.md) — estrutura completa do código
 - [03 — IPC](docs/03-ipc.md) — comunicação Renderer ↔ Main detalhada
+- [09 — Glossário](docs/09-glossario.md) — todos os termos técnicos
+
+### Features
 - [04 — Persistência](docs/04-persistencia.md) — por que electron-store em vez de SQLite (saga real)
 - [05 — Agendamento](docs/05-agendamento.md) — setTimeout, recorrência, edge cases
 - [06 — Notificação persistente](docs/06-notificacao-persistente.md) — a feature-killer do app
 - [07 — Tray e auto-start](docs/07-tray-e-autostart.md) — como rodar em background
 - [08 — Build e release](docs/08-build-e-release.md) — empacotando e publicando
-- [09 — Glossário](docs/09-glossario.md) — todos os termos técnicos
-- [decisoes/](docs/decisoes/) — Architectural Decision Records (ADRs)
+- [10 — Componentes UI](docs/10-componentes-ui.md) — Select, Sidebar, TitleBar, etc
+- [11 — Timer e Cronômetro](docs/11-timer-e-cronometro.md) — composables singleton + Web Audio
+- [12 — Title bar customizada](docs/12-title-bar-customizada.md) — frame:false + IPC controls
+
+### Decisões arquiteturais (ADRs)
+- [001 — electron-store em vez de SQLite](docs/decisoes/001-electron-store-vs-sqlite.md)
+- [002 — frame:false e título customizado](docs/decisoes/002-frame-false-titulo-customizado.md)
+- [003 — Select customizado em vez de nativo](docs/decisoes/003-select-customizado.md)
 
 ## SmartScreen warning ao instalar
 
@@ -105,11 +136,9 @@ O NotifyMe é gratuito e open source. Se ele te ajuda no dia a dia, considere um
 - **[GitHub Sponsors](https://github.com/sponsors/BelmanteGu)** — recorrente mensal
 - **[Ko-fi](https://ko-fi.com/belmantegu)** — pagamento único
 
-Toda doação ajuda a manter o projeto ativo e responder issues.
-
 ## Contribuir
 
-Contribuições são bem-vindas. Antes de mandar PR, abra uma **issue** descrevendo o que pretende fazer — pra alinharmos escopo. Não temos CI ainda; rode `npm run build` antes de submeter pra garantir que tudo compila.
+Contribuições são bem-vindas. Antes de mandar PR, abra uma **issue** descrevendo o que pretende fazer — pra alinharmos escopo. Rode `npm run build` antes de submeter pra garantir que tudo compila.
 
 Bugs? Abre [aqui](https://github.com/BelmanteGu/notifyme/issues).
 
