@@ -9,7 +9,12 @@
 
 @layer base {
   :root {
-    --background: 30 30% 99%;
+    /*
+     * Light mode revisado pra ter mais contraste entre background e card.
+     * Background levemente cinza-azulado (220 14% 96% = #F1F3F5),
+     * card branco puro destaca por cima, borders mais marcadas.
+     */
+    --background: 220 14% 96%;
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
@@ -22,20 +27,20 @@
     --primary-foreground: 0 0% 100%;
     --primary-soft: 24 100% 96%;
 
-    --secondary: 30 20% 97%;
+    --secondary: 220 14% 94%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 30 20% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 14% 92%;
+    --muted-foreground: 220 9% 42%;
 
-    --accent: 24 100% 96%;
+    --accent: 24 100% 95%;
     --accent-foreground: 24 90% 30%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 30 15% 92%;
-    --input: 30 15% 96%;
+    --border: 220 13% 86%;
+    --input: 220 14% 94%;
     --ring: 24 95% 53%;
 
     --radius: 20px;

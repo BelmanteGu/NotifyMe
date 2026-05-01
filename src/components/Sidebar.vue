@@ -24,7 +24,7 @@ const items = [
 
 <template>
   <aside
-    class="w-52 flex-shrink-0 border-r border-border/40 bg-card/30 backdrop-blur-sm flex flex-col py-4 px-2"
+    class="w-52 flex-shrink-0 border-r border-border/60 bg-card/60 dark:bg-card/30 backdrop-blur-sm flex flex-col py-4 px-2"
   >
     <nav class="flex flex-col gap-1 flex-1">
       <button

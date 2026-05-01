@@ -48,27 +48,27 @@ export interface ColorPalette {
 
 export const COLOR_PALETTES: Record<NoteColor, { light: ColorPalette; dark: ColorPalette }> = {
   yellow: {
-    light: { bg: '#FEF3C7', text: '#78350F' },
+    light: { bg: '#FFFAE0', text: '#854D0E' }, // amarelo bem claro tipo papel
     dark: { bg: '#78350F', text: '#FEF3C7' },
   },
   pink: {
-    light: { bg: '#FCE7F3', text: '#831843' },
+    light: { bg: '#FFF0F8', text: '#9D174D' },
     dark: { bg: '#831843', text: '#FCE7F3' },
   },
   blue: {
-    light: { bg: '#DBEAFE', text: '#1E3A8A' },
+    light: { bg: '#EAF4FF', text: '#1E40AF' },
     dark: { bg: '#1E3A8A', text: '#DBEAFE' },
   },
   green: {
-    light: { bg: '#D1FAE5', text: '#064E3B' },
+    light: { bg: '#EBFCEF', text: '#065F46' },
     dark: { bg: '#064E3B', text: '#D1FAE5' },
   },
   orange: {
-    light: { bg: '#FED7AA', text: '#7C2D12' },
+    light: { bg: '#FFEFD8', text: '#9A3412' },
     dark: { bg: '#7C2D12', text: '#FED7AA' },
   },
   purple: {
-    light: { bg: '#E9D5FF', text: '#4C1D95' },
+    light: { bg: '#F5EBFF', text: '#5B21B6' },
     dark: { bg: '#4C1D95', text: '#E9D5FF' },
   },
 }

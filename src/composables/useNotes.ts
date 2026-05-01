@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { Note, NoteInput, NotePatch } from '@/types/note'
 
 /**
@@ -12,6 +12,20 @@ import type { Note, NoteInput, NotePatch } from '@/types/note'
 const notes = ref<Note[]>([])
 const loading = ref(true)
 let initialized = false
+
+/**
+ * Notas ordenadas por updatedAt ASC (mais antigo primeiro).
+ *
+ * Como o DOM stacking é determinado pela ordem de render, a última
+ * nota da lista fica visualmente no topo. Combinado com `update()`
+ * disparado a cada drag (que atualiza `updatedAt`), isso significa:
+ * a última nota movida fica em cima das outras automaticamente.
+ */
+const sortedNotes = computed(() =>
+  [...notes.value].sort(
+    (a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+  )
+)
 
 async function refresh() {
   loading.value = true
@@ -63,7 +77,7 @@ export function useNotes() {
   }
 
   return {
-    notes,
+    notes: sortedNotes,
     loading,
     create,
     update,

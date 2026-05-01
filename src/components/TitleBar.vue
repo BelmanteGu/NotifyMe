@@ -29,7 +29,7 @@ function close() {
 
 <template>
   <div
-    class="h-9 flex items-center justify-between drag-region select-none border-b border-border/40 bg-background/60 backdrop-blur-md"
+    class="h-9 flex items-center justify-between drag-region select-none border-b border-border/60 bg-card/70 dark:bg-background/60 backdrop-blur-md"
   >
     <div class="flex items-center gap-2 px-3">
       <div class="w-5 h-5 rounded-md icon-badge text-primary-foreground flex items-center justify-center">
