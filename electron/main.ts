@@ -160,38 +160,6 @@ function initialize() {
       shell.openExternal(url)
     })
 
-    // System: dialog de confirmação NATIVO (substitui window.confirm())
-    ipcMain.handle(
-      'system:confirm',
-      async (
-        _event,
-        options: {
-          message: string
-          detail?: string
-          confirmText?: string
-          cancelText?: string
-          destructive?: boolean
-        }
-      ) => {
-        const parent =
-          mainWin && !mainWin.isDestroyed() ? mainWin : undefined
-        const result = await dialog.showMessageBox(parent!, {
-          type: options.destructive ? 'warning' : 'question',
-          buttons: [
-            options.cancelText ?? 'Cancelar',
-            options.confirmText ?? 'OK',
-          ],
-          defaultId: 1,
-          cancelId: 0,
-          title: 'NotifyMe',
-          message: options.message,
-          detail: options.detail,
-          noLink: true,
-        })
-        return result.response === 1
-      }
-    )
-
     // Window controls — usados pela TitleBar customizada
     ipcMain.on('window:minimize', () => {
       mainWin?.minimize()

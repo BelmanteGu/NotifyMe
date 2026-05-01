@@ -6,6 +6,7 @@ import RemindersView from '@/views/RemindersView.vue'
 import TimerView from '@/views/TimerView.vue'
 import StopwatchView from '@/views/StopwatchView.vue'
 import AboutModal from '@/components/AboutModal.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const currentView = ref<View>('reminders')
 const aboutOpen = ref(false)
@@ -29,5 +30,6 @@ const aboutOpen = ref(false)
     </div>
 
     <AboutModal v-model:open="aboutOpen" />
+    <ConfirmDialog />
   </div>
 </template>

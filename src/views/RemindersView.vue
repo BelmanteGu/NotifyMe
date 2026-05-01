@@ -5,6 +5,9 @@ import ReminderCard from '@/components/ReminderCard.vue'
 import ReminderModal from '@/components/ReminderModal.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { useReminders } from '@/composables/useReminders'
+import { useConfirm } from '@/composables/useConfirm'
+
+const { confirm } = useConfirm()
 
 const {
   reminders,
@@ -27,9 +30,9 @@ const visibleList = computed(() =>
 
 async function handleClearCompleted() {
   if (completed.value.length === 0) return
-  const ok = await window.notifyme.system.confirm({
+  const ok = await confirm({
     message: `Apagar ${completed.value.length} lembrete(s) concluído(s)?`,
-    detail: 'Não dá pra desfazer.',
+    detail: 'Esta ação não pode ser desfeita.',
     confirmText: 'Apagar',
     cancelText: 'Cancelar',
     destructive: true,
