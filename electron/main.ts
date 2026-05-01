@@ -14,6 +14,7 @@ import { registerRemindersIPC } from './ipc/reminders'
 import { ReminderScheduler } from './scheduler'
 import { showReminderNotification } from './services/notifications'
 import { openAlertWindow, closeAllAlertWindows } from './windows/alertWindow'
+import { openTimerAlertWindow, closeTimerAlertWindow } from './windows/timerAlertWindow'
 import { createTray, destroyTray } from './tray'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -61,6 +62,7 @@ if (!gotLock) {
     isQuitting = true
     scheduler?.stopAll()
     closeAllAlertWindows(alertWindows)
+    closeTimerAlertWindow()
     destroyTray()
   })
 
@@ -203,6 +205,15 @@ function initialize() {
       mainWin?.close()
     })
     ipcMain.handle('window:isMaximized', () => mainWin?.isMaximized() ?? false)
+
+    // Timer: abre janela de alarme persistente quando countdown zera
+    ipcMain.handle('timer:openAlert', () => {
+      openTimerAlertWindow({
+        rendererDist: RENDERER_DIST,
+        devServerUrl: VITE_DEV_SERVER_URL,
+        preloadPath: PRELOAD_PATH,
+      })
+    })
 
     createMainWindow()
     createTray({

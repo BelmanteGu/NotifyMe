@@ -43,6 +43,10 @@ const api: NotifyMeAPI = {
     },
   },
 
+  timer: {
+    openAlert: (): Promise<void> => ipcRenderer.invoke('timer:openAlert'),
+  },
+
   system: {
     openExternal: (url: string): Promise<void> =>
       ipcRenderer.invoke('system:openExternal', url),

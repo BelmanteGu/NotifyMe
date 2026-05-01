@@ -1,5 +1,4 @@
 import { ref, computed } from 'vue'
-import { playTimerEndSound } from '@/utils/sound'
 
 /**
  * Composable global do Timer (countdown).
@@ -67,18 +66,13 @@ function setMinutes(mins: number) {
 function handleComplete() {
   pause()
   remainingSeconds.value = 0
-  playTimerEndSound()
 
-  if ('Notification' in window && Notification.permission !== 'denied') {
-    try {
-      new Notification('NotifyMe — Timer', {
-        body: 'Tempo esgotado!',
-        silent: false,
-      })
-    } catch {
-      // Notification pode falhar em alguns ambientes; o som já tocou
-    }
-  }
+  // Em vez de Notification + 3 beeps que somem em segundos, abre uma
+  // janela persistente always-on-top com som em loop até o usuário
+  // confirmar. Mesmo padrão dos lembretes — diferencial do app.
+  window.notifyme.timer.openAlert().catch((e) => {
+    console.error('[useTimer] failed to open alert window:', e)
+  })
 }
 
 export function useTimer() {

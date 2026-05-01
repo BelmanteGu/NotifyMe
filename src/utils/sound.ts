@@ -75,3 +75,54 @@ export function playTimerEndSound(): void {
     console.warn('[sound] failed to play timer sound:', e)
   }
 }
+
+// ─── Alarme em loop (timer) ────────────────────────────────────────
+
+let alarmIntervalId: number | null = null
+let alarmTimeoutId: number | null = null
+
+/**
+ * Inicia o alarme do timer. Toca um padrão de 3 notas (A5+A5+C#6) e
+ * **repete a cada 1.4s** até o usuário parar via stopTimerAlarm().
+ *
+ * Auto-stop após 2 minutos (mesmo se ninguém clicar) — evita barulho
+ * infinito caso a janela fique aberta sem usuário por perto.
+ */
+export function startTimerAlarm(): void {
+  stopTimerAlarm() // garante que não tem outro loop rodando
+
+  const playPattern = () => {
+    try {
+      const ctx = getContext()
+      const now = ctx.currentTime
+      playNote(ctx, 880.0, now, 0.15, 0.3)          // A5
+      playNote(ctx, 880.0, now + 0.2, 0.15, 0.3)    // A5
+      playNote(ctx, 1108.73, now + 0.45, 0.3, 0.32) // C#6 (mais agudo)
+    } catch (e) {
+      console.warn('[sound] alarm pattern failed:', e)
+    }
+  }
+
+  playPattern() // toca imediatamente ao chamar
+  alarmIntervalId = window.setInterval(playPattern, 1400)
+
+  // Safety: para sozinho após 2 min se ninguém parou manualmente
+  alarmTimeoutId = window.setTimeout(() => {
+    stopTimerAlarm()
+  }, 120_000)
+}
+
+/**
+ * Para o alarme em loop. Idempotente — pode chamar várias vezes
+ * sem problema.
+ */
+export function stopTimerAlarm(): void {
+  if (alarmIntervalId !== null) {
+    clearInterval(alarmIntervalId)
+    alarmIntervalId = null
+  }
+  if (alarmTimeoutId !== null) {
+    clearTimeout(alarmTimeoutId)
+    alarmTimeoutId = null
+  }
+}

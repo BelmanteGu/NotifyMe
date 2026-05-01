@@ -33,6 +33,14 @@ export interface NotifyMeAPI {
     onChanged: (callback: () => void) => () => void
   }
 
+  timer: {
+    /**
+     * Abre a janela de alarme do timer (always-on-top com botão "Parar").
+     * Chamada por useTimer.handleComplete() quando o countdown zera.
+     */
+    openAlert: () => Promise<void>
+  }
+
   system: {
     /** Abre uma URL HTTP/HTTPS no navegador padrão do usuário (não no Electron). */
     openExternal: (url: string) => Promise<void>
