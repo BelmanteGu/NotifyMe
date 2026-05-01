@@ -123,6 +123,41 @@ estado da Fase 6 — a Fase 7 substitui.
 - `npm install` rodado uma vez
 - Você está no Windows (pra builds Windows). Builds cross-platform são
   possíveis mas mais complicados.
+- **Modo de desenvolvedor do Windows ativado** (veja seção a seguir) —
+  necessário porque o `electron-builder` extrai um pacote com symlinks
+  do macOS internamente.
+
+### Pegadinha: erro "Cannot create symbolic link"
+
+Sintoma típico:
+
+```
+ERROR: Cannot create symbolic link : O cliente não tem o privilégio necessário.
+       : ...\winCodeSign\...\darwin\10.12\lib\libcrypto.dylib
+```
+
+Causa: o `electron-builder` baixa um pacote auxiliar chamado `winCodeSign`
+(usado pra assinatura de binários) que **contém symlinks do macOS**, e
+contas Windows comuns não têm permissão pra criar symlinks por padrão —
+mesmo que a gente nem use signing.
+
+**Solução recomendada — ativar Modo de Desenvolvedor (uma vez só):**
+
+1. `Win + I` → **Configurações**
+2. **Sistema → Para desenvolvedores**
+3. Liga **"Modo de desenvolvedor"**
+4. Confirma o aviso
+
+Depois, limpa o cache corrompido:
+
+```powershell
+Remove-Item -Recurse -Force "$env:LOCALAPPDATA\electron-builder\Cache" -ErrorAction SilentlyContinue
+```
+
+E roda o build de novo. Funciona daí em diante.
+
+**Alternativa**: rodar PowerShell como administrador pra cada build.
+Funciona mas é chato.
 
 ### Comandos
 
