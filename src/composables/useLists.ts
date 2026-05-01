@@ -90,6 +90,13 @@ async function exportMd(listId: string) {
   return window.notifyme.lists.exportMd(listId)
 }
 
+async function exportImage(
+  listId: string,
+  rect: { x: number; y: number; width: number; height: number }
+) {
+  return window.notifyme.lists.exportImage(listId, rect)
+}
+
 async function importMd() {
   const result = await window.notifyme.lists.importMd()
   if (result.success && result.list) {
@@ -102,7 +109,13 @@ export function useLists() {
   if (!initialized) {
     initialized = true
     refresh()
-    window.notifyme.lists.onChanged(() => refresh())
+    /*
+     * NOTA: NÃO subscrevemos `lists:changed` aqui — cada mutação IPC
+     * já retorna a entidade atualizada e atualizamos o cache local
+     * direto. Re-fetch global causaria piscar do Vue (re-monta inputs)
+     * e atrapalha digitação. Se algum dia outra janela mudar listas,
+     * reativar com cuidado pra preservar foco/cursor.
+     */
   }
 
   return {
@@ -116,6 +129,7 @@ export function useLists() {
     updateItem,
     removeItem,
     exportMd,
+    exportImage,
     importMd,
     refresh,
   }

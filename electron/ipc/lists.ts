@@ -102,6 +102,54 @@ export function registerListsIPC(ctx: RegisterContext): void {
     }
   })
 
+  // ─── Export como imagem PNG ─────────────────────────────────
+  ipcMain.handle(
+    'lists:exportImage',
+    async (
+      _event,
+      listId: string,
+      rect: { x: number; y: number; width: number; height: number }
+    ) => {
+      const list = service.findById(listId)
+      if (!list) return { success: false, reason: 'not_found' as const }
+
+      const win = getMainWindow()
+      if (!win)
+        return { success: false, reason: 'no_window' as const }
+
+      // Captura só a região da página de caderno via Electron API
+      const image = await win.webContents.capturePage({
+        x: Math.max(0, Math.floor(rect.x)),
+        y: Math.max(0, Math.floor(rect.y)),
+        width: Math.max(1, Math.ceil(rect.width)),
+        height: Math.max(1, Math.ceil(rect.height)),
+      })
+      const buffer = image.toPNG()
+
+      const defaultName = `${list.date}-${slugify(list.title)}.png`
+      const result = await dialog.showSaveDialog(win, {
+        title: 'Exportar como imagem',
+        defaultPath: defaultName,
+        filters: [{ name: 'PNG', extensions: ['png'] }],
+      })
+
+      if (result.canceled || !result.filePath) {
+        return { success: false, reason: 'canceled' as const }
+      }
+
+      try {
+        await fs.writeFile(result.filePath, buffer)
+        return { success: true as const, path: result.filePath }
+      } catch (e) {
+        return {
+          success: false as const,
+          reason: 'write_failed' as const,
+          message: (e as Error).message,
+        }
+      }
+    }
+  )
+
   // ─── Import de .md via dialog nativo ─────────────────────────
   ipcMain.handle('lists:importMd', async () => {
     const win = getMainWindow()

@@ -18,6 +18,13 @@ interface ImportMdResult {
   message?: string
 }
 
+interface ExportImageResult {
+  success: boolean
+  path?: string
+  reason?: 'not_found' | 'no_window' | 'canceled' | 'write_failed'
+  message?: string
+}
+
 /**
  * Contrato da API exposta pelo preload em window.notifyme.
  *
@@ -106,6 +113,10 @@ export interface NotifyMeAPI {
     ) => Promise<TaskList | null>
     removeItem: (listId: string, itemId: string) => Promise<TaskList | null>
     exportMd: (listId: string) => Promise<ExportMdResult>
+    exportImage: (
+      listId: string,
+      rect: { x: number; y: number; width: number; height: number }
+    ) => Promise<ExportImageResult>
     importMd: () => Promise<ImportMdResult>
     onChanged: (callback: () => void) => () => void
   }

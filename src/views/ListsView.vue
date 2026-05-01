@@ -3,10 +3,12 @@
  * ListsView — aba "Listas" estilo caderno.
  *
  * Cada lista é uma "página" com data, título e itens checáveis.
- * Navegação esquerda/direita pra ver páginas anteriores/próximas.
- * Suporta criar nova página, deletar atual, e import/export .md.
+ * Visual de papel pautado SEMPRE claro (não respeita dark mode da app —
+ * caderno é caderno).
  *
- * Visual da página: papel pautado com margem vermelha (caderno).
+ * Edição com debounce (400ms) — evita piscar e IPC excessivo durante
+ * digitação. Refs locais (`localTitle`, `localItemDrafts`) seguram o
+ * estado da UI; sync com Main acontece após pause na digitação.
  */
 
 import { ref, computed, watch, nextTick } from 'vue'
@@ -20,6 +22,7 @@ import {
   Upload,
   ListChecks,
   Trash2,
+  Image as ImageIcon,
 } from 'lucide-vue-next'
 import { useLists } from '@/composables/useLists'
 import { useConfirm } from '@/composables/useConfirm'
@@ -36,6 +39,7 @@ const {
   updateItem,
   removeItem,
   exportMd,
+  exportImage,
   importMd,
 } = useLists()
 const { confirm } = useConfirm()
@@ -47,6 +51,81 @@ const currentList = computed<TaskList | null>(
 
 const newItemText = ref('')
 const newItemInput = ref<HTMLInputElement | null>(null)
+const pageRef = ref<HTMLElement | null>(null)
+
+// ─── Drafts locais com debounce ────────────────────────────
+const localTitle = ref('')
+const localDate = ref('')
+const localItemDrafts = ref<Record<string, string>>({})
+
+let titleTimer: number | null = null
+let dateTimer: number | null = null
+const itemTimers = new Map<string, number>()
+
+/** Sincroniza drafts quando muda de página (id diferente) ou lista
+ * é atualizada por fora (import, etc). Não sobrescreve drafts em
+ * digitação ativa pra não pular cursor. */
+watch(
+  () => currentList.value?.id,
+  () => {
+    if (!currentList.value) {
+      localTitle.value = ''
+      localDate.value = ''
+      localItemDrafts.value = {}
+      return
+    }
+    localTitle.value = currentList.value.title
+    localDate.value = currentList.value.date
+    const map: Record<string, string> = {}
+    for (const item of currentList.value.items) {
+      map[item.id] = item.text
+    }
+    localItemDrafts.value = map
+  },
+  { immediate: true }
+)
+
+function getItemText(item: TaskItem): string {
+  return localItemDrafts.value[item.id] ?? item.text
+}
+
+function onTitleInput(event: Event) {
+  const value = (event.target as HTMLInputElement).value
+  localTitle.value = value
+  if (titleTimer !== null) clearTimeout(titleTimer)
+  titleTimer = window.setTimeout(() => {
+    if (currentList.value && value !== currentList.value.title) {
+      update(currentList.value.id, { title: value })
+    }
+    titleTimer = null
+  }, 400)
+}
+
+function onDateChange(event: Event) {
+  const value = (event.target as HTMLInputElement).value
+  localDate.value = value
+  if (dateTimer !== null) clearTimeout(dateTimer)
+  dateTimer = window.setTimeout(() => {
+    if (currentList.value && value !== currentList.value.date) {
+      update(currentList.value.id, { date: value })
+    }
+    dateTimer = null
+  }, 200)
+}
+
+function onItemTextInput(item: TaskItem, event: Event) {
+  const value = (event.target as HTMLInputElement).value
+  localItemDrafts.value = { ...localItemDrafts.value, [item.id]: value }
+  const existing = itemTimers.get(item.id)
+  if (existing !== undefined) clearTimeout(existing)
+  const timer = window.setTimeout(() => {
+    if (currentList.value && value !== item.text) {
+      updateItem(currentList.value.id, item.id, value)
+    }
+    itemTimers.delete(item.id)
+  }, 400)
+  itemTimers.set(item.id, timer)
+}
 
 // Mantém o currentIndex válido ao adicionar/remover listas
 watch(
@@ -64,17 +143,11 @@ watch(
 
 // ─── Navegação ──────────────────────────────────────────────
 function goPrev() {
-  if (currentIndex.value < lists.value.length - 1) {
-    currentIndex.value++
-  }
+  if (currentIndex.value < lists.value.length - 1) currentIndex.value++
 }
-
 function goNext() {
-  if (currentIndex.value > 0) {
-    currentIndex.value--
-  }
+  if (currentIndex.value > 0) currentIndex.value--
 }
-
 const canGoPrev = computed(() => currentIndex.value < lists.value.length - 1)
 const canGoNext = computed(() => currentIndex.value > 0)
 
@@ -85,34 +158,23 @@ function todayISO(): string {
 }
 
 async function handleNewPage() {
-  await create({
-    title: 'Nova lista',
-    date: todayISO(),
-  })
-  // Vai pra primeira posição (mais recente)
+  await create({ title: 'Nova lista', date: todayISO() })
   currentIndex.value = 0
 }
 
-// ─── Editar título e data ───────────────────────────────────
-function handleTitleChange(event: Event) {
-  if (!currentList.value) return
-  const target = event.target as HTMLInputElement
-  update(currentList.value.id, { title: target.value })
-}
-
-function handleDateChange(event: Event) {
-  if (!currentList.value) return
-  const target = event.target as HTMLInputElement
-  update(currentList.value.id, { date: target.value })
-}
-
-// ─── Itens ──────────────────────────────────────────────────
+// ─── Items ──────────────────────────────────────────────────
 async function handleAddItem() {
   if (!currentList.value) return
   const text = newItemText.value.trim()
   if (!text) return
-  await addItem(currentList.value.id, text)
+
+  // Otimista: limpa antes do await pra UX responsivo. User pode
+  // continuar digitando o próximo item enquanto o IPC roda.
   newItemText.value = ''
+
+  await addItem(currentList.value.id, text)
+
+  // Garante foco continuado no input pra adicionar mais
   await nextTick()
   newItemInput.value?.focus()
 }
@@ -122,14 +184,12 @@ function handleToggle(item: TaskItem) {
   toggleItem(currentList.value.id, item.id)
 }
 
-function handleItemTextChange(item: TaskItem, event: Event) {
-  if (!currentList.value) return
-  const target = event.target as HTMLInputElement
-  updateItem(currentList.value.id, item.id, target.value)
-}
-
 function handleRemoveItem(item: TaskItem) {
   if (!currentList.value) return
+  // Limpa draft local antes de remover
+  const next = { ...localItemDrafts.value }
+  delete next[item.id]
+  localItemDrafts.value = next
   removeItem(currentList.value.id, item.id)
 }
 
@@ -147,15 +207,32 @@ async function handleDeleteList() {
   await remove(currentList.value.id)
 }
 
-// ─── Import/Export .md ──────────────────────────────────────
-async function handleExport() {
+// ─── Import/Export ──────────────────────────────────────────
+async function handleExportMd() {
   if (!currentList.value) return
   const result = await exportMd(currentList.value.id)
-  if (result.success) {
-    console.log('[lists] exported to', result.path)
-  } else if (result.reason !== 'canceled') {
+  if (!result.success && result.reason !== 'canceled') {
     await confirm({
       message: 'Não foi possível exportar',
+      detail: result.message ?? 'Erro desconhecido.',
+      confirmText: 'OK',
+      cancelText: '',
+    })
+  }
+}
+
+async function handleExportImage() {
+  if (!currentList.value || !pageRef.value) return
+  const rect = pageRef.value.getBoundingClientRect()
+  const result = await exportImage(currentList.value.id, {
+    x: rect.left,
+    y: rect.top,
+    width: rect.width,
+    height: rect.height,
+  })
+  if (!result.success && result.reason !== 'canceled') {
+    await confirm({
+      message: 'Não foi possível exportar imagem',
       detail: result.message ?? 'Erro desconhecido.',
       confirmText: 'OK',
       cancelText: '',
@@ -166,7 +243,6 @@ async function handleExport() {
 async function handleImport() {
   const result = await importMd()
   if (result.success && result.list) {
-    // Foca na lista importada
     await nextTick()
     const idx = lists.value.findIndex((l) => l.id === result.list?.id)
     if (idx >= 0) currentIndex.value = idx
@@ -180,7 +256,6 @@ async function handleImport() {
   }
 }
 
-// ─── Display da data BR ─────────────────────────────────────
 function formatDateBR(iso: string): string {
   const [y, m, d] = iso.split('-')
   if (!y || !m || !d) return iso
@@ -222,12 +297,10 @@ function formatDateBR(iso: string): string {
 
     <!-- Body -->
     <div class="flex-1 overflow-y-auto scroll-overlay px-8 py-6">
-      <!-- Loading -->
       <div v-if="loading" class="text-center text-muted-foreground py-16">
         Carregando…
       </div>
 
-      <!-- Empty state -->
       <div
         v-else-if="lists.length === 0"
         class="flex items-center justify-center min-h-[60vh]"
@@ -246,8 +319,7 @@ function formatDateBR(iso: string): string {
           </h3>
           <p class="text-muted-foreground leading-relaxed mb-6">
             Crie uma lista pra organizar suas tarefas, compras ou qualquer
-            checklist do dia. Pode importar uma lista existente em
-            <code class="text-primary font-mono text-xs">.md</code>.
+            checklist do dia.
           </p>
           <div class="flex gap-2 justify-center">
             <button
@@ -268,7 +340,6 @@ function formatDateBR(iso: string): string {
         </div>
       </div>
 
-      <!-- Página atual -->
       <div v-else-if="currentList" class="max-w-2xl mx-auto">
         <!-- Navegação entre páginas -->
         <div class="flex items-center justify-between mb-4 text-sm">
@@ -302,19 +373,19 @@ function formatDateBR(iso: string): string {
           </button>
         </div>
 
-        <!-- Página de papel pautado -->
-        <article class="task-list-page">
+        <!-- Página de papel pautado (sempre clara, sem dark mode) -->
+        <article ref="pageRef" class="task-list-page">
           <header class="page-header">
             <input
-              :value="currentList.title"
-              @input="handleTitleChange"
+              :value="localTitle"
+              @input="onTitleInput"
               class="page-title-input"
               placeholder="Título da lista"
               maxlength="120"
             />
             <input
-              :value="currentList.date"
-              @input="handleDateChange"
+              :value="localDate"
+              @input="onDateChange"
               type="date"
               class="page-date-input"
             />
@@ -335,8 +406,8 @@ function formatDateBR(iso: string): string {
                 <Check v-if="item.done" class="w-3 h-3" />
               </button>
               <input
-                :value="item.text"
-                @input="handleItemTextChange(item, $event)"
+                :value="getItemText(item)"
+                @input="(e) => onItemTextInput(item, e)"
                 class="task-text"
                 :class="{ done: item.done }"
                 placeholder="Descrição do item"
@@ -350,7 +421,6 @@ function formatDateBR(iso: string): string {
               </button>
             </li>
 
-            <!-- Adicionar novo item -->
             <li class="task-item add-item">
               <span class="task-checkbox add-placeholder">
                 <Plus class="w-3 h-3" />
@@ -367,7 +437,7 @@ function formatDateBR(iso: string): string {
         </article>
 
         <!-- Footer ações da página -->
-        <div class="flex items-center justify-between mt-4">
+        <div class="flex items-center justify-between mt-4 flex-wrap gap-2">
           <div class="text-xs text-muted-foreground">
             {{ formatDateBR(currentList.date) }} ·
             {{ currentList.items.length }}
@@ -375,14 +445,22 @@ function formatDateBR(iso: string): string {
             {{ currentList.items.filter((i) => i.done).length }} concluídos
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1">
             <button
-              @click="handleExport"
+              @click="handleExportMd"
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition"
-              title="Exportar como .md"
+              title="Exportar como Markdown (.md)"
             >
               <Download class="w-3.5 h-3.5" />
-              Exportar
+              .md
+            </button>
+            <button
+              @click="handleExportImage"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition"
+              title="Exportar como imagem (.png)"
+            >
+              <ImageIcon class="w-3.5 h-3.5" />
+              Imagem
             </button>
             <button
               @click="handleDeleteList"
@@ -400,12 +478,13 @@ function formatDateBR(iso: string): string {
 
 <style scoped>
 /*
- * Página de caderno: papel pautado + margem vermelha lateral.
- * Linhas a cada 32px (line-height do texto), começando depois do header.
+ * Página de caderno SEMPRE clara. Independe do tema do app.
+ * Caderno é caderno — papel é papel.
  */
 .task-list-page {
   position: relative;
   background: #fffef7;
+  color: #1f2937;
   border-radius: 12px;
   padding: 28px 32px 32px 76px;
   box-shadow:
@@ -418,27 +497,11 @@ function formatDateBR(iso: string): string {
     rgba(99, 132, 168, 0.18) 31px,
     rgba(99, 132, 168, 0.18) 32px
   );
-  background-position: 0 96px; /* começa após o header (~96px) */
-  background-size: 100% 32px;
-}
-
-:global(.dark) .task-list-page {
-  background: #1a1a1c;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 31px,
-    rgba(138, 161, 199, 0.12) 31px,
-    rgba(138, 161, 199, 0.12) 32px
-  );
   background-position: 0 96px;
   background-size: 100% 32px;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.4),
-    0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
-/* Margem vermelha vertical (linha lateral) */
+/* Margem vermelha vertical */
 .task-list-page::before {
   content: '';
   position: absolute;
@@ -449,10 +512,6 @@ function formatDateBR(iso: string): string {
   background: rgba(239, 68, 68, 0.45);
 }
 
-:global(.dark) .task-list-page::before {
-  background: rgba(252, 165, 165, 0.32);
-}
-
 .page-header {
   display: flex;
   align-items: baseline;
@@ -461,10 +520,6 @@ function formatDateBR(iso: string): string {
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px dashed rgba(99, 132, 168, 0.25);
-}
-
-:global(.dark) .page-header {
-  border-bottom-color: rgba(138, 161, 199, 0.25);
 }
 
 .page-title-input {
@@ -479,16 +534,8 @@ function formatDateBR(iso: string): string {
   letter-spacing: -0.01em;
 }
 
-:global(.dark) .page-title-input {
-  color: #ECECED;
-}
-
 .page-title-input::placeholder {
   color: rgba(31, 41, 55, 0.35);
-}
-
-:global(.dark) .page-title-input::placeholder {
-  color: rgba(236, 236, 237, 0.3);
 }
 
 .page-date-input {
@@ -500,13 +547,7 @@ function formatDateBR(iso: string): string {
   font-weight: 600;
   color: rgba(31, 41, 55, 0.55);
   cursor: pointer;
-  /* Esconde o ícone do calendário do input nativo */
   color-scheme: light;
-}
-
-:global(.dark) .page-date-input {
-  color: rgba(236, 236, 237, 0.6);
-  color-scheme: dark;
 }
 
 .task-items {
@@ -539,10 +580,6 @@ function formatDateBR(iso: string): string {
   padding: 0;
 }
 
-:global(.dark) .task-checkbox {
-  border-color: rgba(138, 161, 199, 0.55);
-}
-
 .task-checkbox:hover {
   border-color: hsl(var(--primary));
 }
@@ -558,10 +595,6 @@ function formatDateBR(iso: string): string {
   cursor: default;
 }
 
-:global(.dark) .task-checkbox.add-placeholder {
-  color: rgba(138, 161, 199, 0.6);
-}
-
 .task-text {
   flex: 1;
   background: transparent;
@@ -575,25 +608,13 @@ function formatDateBR(iso: string): string {
   padding: 0;
 }
 
-:global(.dark) .task-text {
-  color: #ECECED;
-}
-
 .task-text::placeholder {
   color: rgba(31, 41, 55, 0.4);
-}
-
-:global(.dark) .task-text::placeholder {
-  color: rgba(236, 236, 237, 0.35);
 }
 
 .task-text.done {
   text-decoration: line-through;
   color: rgba(31, 41, 55, 0.5);
-}
-
-:global(.dark) .task-text.done {
-  color: rgba(236, 236, 237, 0.4);
 }
 
 .task-remove {
@@ -610,10 +631,6 @@ function formatDateBR(iso: string): string {
   justify-content: center;
   opacity: 0;
   transition: opacity 0.15s, color 0.15s, background 0.15s;
-}
-
-:global(.dark) .task-remove {
-  color: rgba(236, 236, 237, 0.35);
 }
 
 .task-item:hover .task-remove {

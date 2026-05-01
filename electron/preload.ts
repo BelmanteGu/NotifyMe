@@ -120,6 +120,10 @@ const api: NotifyMeAPI = {
       ipcRenderer.invoke('lists:removeItem', listId, itemId),
     exportMd: (listId: string) =>
       ipcRenderer.invoke('lists:exportMd', listId),
+    exportImage: (
+      listId: string,
+      rect: { x: number; y: number; width: number; height: number }
+    ) => ipcRenderer.invoke('lists:exportImage', listId, rect),
     importMd: () => ipcRenderer.invoke('lists:importMd'),
     onChanged: (callback) => {
       const handler = () => callback()
