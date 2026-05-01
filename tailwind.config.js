@@ -21,6 +21,7 @@ export default {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
+          soft: 'hsl(var(--primary-soft))',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
@@ -47,9 +48,14 @@ export default {
         heading: ['Outfit', 'sans-serif'],
       },
       borderRadius: {
-        lg: '20px',
-        md: '15px',
-        sm: '13px',
+        sm: '14px',
+        md: '18px',
+        lg: '24px',
+        xl: '32px',
+      },
+      boxShadow: {
+        soft: '0 8px 24px -4px rgba(0, 0, 0, 0.06), 0 2px 6px -2px rgba(0, 0, 0, 0.04)',
+        glow: '0 0 0 4px hsl(24 95% 53% / 0.15), 0 8px 24px -4px hsl(24 95% 53% / 0.35)',
       },
     },
   },

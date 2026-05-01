@@ -8,7 +8,7 @@ const { isDark, toggle } = useTheme()
 <template>
   <button
     @click="toggle"
-    class="w-9 h-9 inline-flex items-center justify-center rounded-md border border-border bg-background hover:bg-muted transition"
+    class="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-border/60 bg-card/50 hover:bg-card transition-all"
     :title="isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'"
     :aria-label="isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'"
   >

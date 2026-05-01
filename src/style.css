@@ -3,16 +3,13 @@
 @tailwind utilities;
 
 /*
- * Sistema de cores HSL — mesma estrutura do Cliloop (shadcn-vue).
- * Trocando a primary indigo por LARANJA.
- *
- * Light mode primary:  hsl(24 95% 53%)  = #F97316
- * Dark mode primary:   hsl(24 95% 60%)  = #FB8E3C (mais claro p/ contraste)
+ * Sistema de cores HSL (light/dark) com primary laranja.
+ * Border radius generoso pra sensação Apple-like.
  */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 30 30% 99%;
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
@@ -23,11 +20,12 @@
 
     --primary: 24 95% 53%;
     --primary-foreground: 0 0% 100%;
+    --primary-soft: 24 100% 96%;
 
-    --secondary: 0 0% 96%;
+    --secondary: 30 20% 97%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 0 0% 96%;
+    --muted: 30 20% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
     --accent: 24 100% 96%;
@@ -36,11 +34,11 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 94%;
+    --border: 30 15% 92%;
+    --input: 30 15% 96%;
     --ring: 24 95% 53%;
 
-    --radius: 15px;
+    --radius: 20px;
   }
 
   .dark {
@@ -55,20 +53,21 @@
 
     --primary: 24 95% 60%;
     --primary-foreground: 0 0% 100%;
+    --primary-soft: 24 50% 16%;
 
     --secondary: 240 10% 7.8%;
     --secondary-foreground: 0 0% 63%;
 
-    --muted: 240 4% 15%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 240 4% 13%;
+    --muted-foreground: 0 0% 55%;
 
-    --accent: 240 4% 15%;
-    --accent-foreground: 24 95% 70%;
+    --accent: 24 50% 16%;
+    --accent-foreground: 24 95% 75%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 240 10% 5.5%;
 
-    --border: 240 4% 15%;
+    --border: 240 4% 16%;
     --input: 240 10% 11%;
     --ring: 24 95% 60%;
   }
@@ -77,20 +76,135 @@
     @apply border-border;
   }
 
+  html {
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     user-select: none;
+    /* Background com glow laranja sutil no topo (substituido em .bg-app pra ter mais controle) */
+    background: hsl(var(--background));
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Outfit', 'Inter', sans-serif;
     @apply text-foreground;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer utilities {
+  /* Background do app — gradient radial com glow laranja sutil no topo */
+  .bg-app {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% -10%, hsl(var(--primary) / 0.08), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 90% 110%, hsl(var(--primary) / 0.04), transparent 50%),
+      hsl(var(--background));
   }
 
-  html {
-    transition: background-color 0.2s ease, color 0.2s ease;
+  .dark .bg-app {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% -10%, hsl(var(--primary) / 0.12), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 90% 110%, hsl(var(--primary) / 0.06), transparent 50%),
+      hsl(var(--background));
+  }
+
+  /* Glass morphism — card translucent com blur */
+  .glass {
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.6);
+  }
+
+  .dark .glass {
+    background: hsl(var(--card) / 0.55);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* Variante mais opaca pra modais */
+  .glass-strong {
+    background: hsl(var(--card) / 0.92);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.6);
+  }
+
+  .dark .glass-strong {
+    background: hsl(var(--card) / 0.78);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Ícone com gradient laranja + glow — usado em badges */
+  .icon-badge {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.75));
+    box-shadow:
+      0 8px 16px -4px hsl(var(--primary) / 0.35),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+  }
+
+  /* Botão primário com gradient + shadow tactile */
+  .btn-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.85));
+    box-shadow:
+      0 4px 12px -2px hsl(var(--primary) / 0.4),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    box-shadow:
+      0 6px 16px -2px hsl(var(--primary) / 0.5),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px -2px hsl(var(--primary) / 0.35);
+  }
+
+  /* Subtle hover lift — pra cards */
+  .lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .lift:hover {
+    transform: translateY(-1px);
+  }
+
+  /* Pulse suave pro alerta */
+  @keyframes glow-pulse {
+    0%, 100% {
+      box-shadow:
+        0 0 0 0 hsl(var(--primary) / 0.4),
+        0 8px 16px -4px hsl(var(--primary) / 0.35);
+    }
+    50% {
+      box-shadow:
+        0 0 0 12px hsl(var(--primary) / 0),
+        0 8px 16px -4px hsl(var(--primary) / 0.35);
+    }
+  }
+
+  .glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+
+  /* Drag region — usado na barra superior da AlertWindow */
+  .drag-region {
+    -webkit-app-region: drag;
+  }
+
+  .no-drag {
+    -webkit-app-region: no-drag;
   }
 }

@@ -27,7 +27,6 @@ const isCompleted = computed(() => props.reminder.status === 'completed')
 const recurrenceLabel = computed(() => RECURRENCE_LABELS[props.reminder.recurrence])
 const triggerLabel = computed(() => formatRelative(props.reminder.triggerAt))
 
-/** Lembrete pendente cuja hora já passou — visualmente destacado. */
 const isOverdue = computed(() => {
   if (isCompleted.value) return false
   return new Date(props.reminder.triggerAt).getTime() < Date.now()
@@ -57,20 +56,21 @@ onBeforeUnmount(() => {
 
 <template>
   <article
-    class="rounded-lg border bg-card p-5 flex items-start gap-4 transition"
+    class="glass rounded-lg p-5 flex items-start gap-4 lift"
     :class="[
-      isOverdue ? 'border-destructive/50' : 'border-border',
-      isCompleted ? 'opacity-60' : 'hover:bg-muted/30',
+      isOverdue && '!border-destructive/40',
+      isCompleted && 'opacity-65',
     ]"
   >
+    <!-- Ícone com gradient + soft shadow -->
     <div
-      class="w-11 h-11 rounded-md flex items-center justify-center flex-shrink-0"
+      class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
       :class="
         isCompleted
-          ? 'bg-primary/10 text-primary'
+          ? 'bg-primary/15 text-primary'
           : isOverdue
             ? 'bg-destructive/15 text-destructive'
-            : 'bg-accent text-accent-foreground'
+            : 'icon-badge text-primary-foreground'
       "
     >
       <CheckCircle2 v-if="isCompleted" class="w-5 h-5" />
@@ -80,16 +80,16 @@ onBeforeUnmount(() => {
 
     <div class="flex-1 min-w-0">
       <div class="flex items-start justify-between gap-3">
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1">
           <h3
-            class="font-semibold text-foreground truncate"
-            :class="{ 'line-through': isCompleted }"
+            class="font-semibold text-foreground truncate text-[15px] leading-tight"
+            :class="{ 'line-through decoration-1': isCompleted }"
           >
             {{ reminder.title }}
           </h3>
           <p
             v-if="reminder.description"
-            class="text-sm text-muted-foreground mt-0.5 truncate"
+            class="text-sm text-muted-foreground mt-1 truncate"
           >
             {{ reminder.description }}
           </p>
@@ -98,7 +98,7 @@ onBeforeUnmount(() => {
         <div ref="menuRef" class="relative flex-shrink-0">
           <button
             @click.stop="toggleMenu"
-            class="p-1 rounded hover:bg-muted text-muted-foreground transition"
+            class="w-8 h-8 inline-flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground transition"
             aria-label="Mais opções"
           >
             <MoreVertical class="w-4 h-4" />
@@ -106,19 +106,19 @@ onBeforeUnmount(() => {
 
           <div
             v-if="menuOpen"
-            class="absolute right-0 top-full mt-1 w-52 rounded-md border border-border bg-popover shadow-lg z-20 py-1"
+            class="absolute right-0 top-full mt-1 w-56 rounded-xl glass-strong shadow-soft z-20 py-1.5 overflow-hidden"
           >
             <button
               v-if="!isCompleted"
               @click="$emit('mark-completed', reminder.id); menuOpen = false"
-              class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-muted transition"
+              class="w-full px-4 py-2.5 text-left text-sm flex items-center gap-2.5 hover:bg-muted transition"
             >
               <CheckCircle2 class="w-4 h-4 text-primary" />
               Marcar como concluído
             </button>
             <button
               @click="$emit('delete', reminder.id); menuOpen = false"
-              class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-muted transition text-destructive"
+              class="w-full px-4 py-2.5 text-left text-sm flex items-center gap-2.5 hover:bg-destructive/10 transition text-destructive"
             >
               <Trash2 class="w-4 h-4" />
               Excluir
@@ -127,9 +127,9 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="flex items-center gap-3 mt-3 text-xs">
+      <div class="flex items-center gap-2 mt-3 text-xs">
         <span
-          class="inline-flex items-center gap-1"
+          class="inline-flex items-center gap-1.5"
           :class="
             isOverdue
               ? 'text-destructive font-semibold'
@@ -143,7 +143,7 @@ onBeforeUnmount(() => {
 
         <span
           v-if="reminder.recurrence !== 'once'"
-          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm bg-accent text-accent-foreground font-medium"
+          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent text-accent-foreground font-medium text-[11px]"
         >
           <Repeat class="w-3 h-3" />
           {{ recurrenceLabel }}

@@ -63,28 +63,33 @@ function submit() {
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
       @click.self="close"
     >
       <div
-        class="w-full max-w-md rounded-lg border border-border bg-card shadow-2xl"
+        class="w-full max-w-md rounded-xl glass-strong shadow-soft overflow-hidden"
         role="dialog"
         aria-labelledby="modal-title"
       >
-        <header class="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 id="modal-title" class="text-lg font-bold">Novo lembrete</h2>
+        <header class="flex items-center justify-between px-6 py-5 border-b border-border/40">
+          <div>
+            <h2 id="modal-title" class="text-lg font-bold tracking-tight">Novo lembrete</h2>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              Vai aparecer no horário escolhido — e não some até você confirmar.
+            </p>
+          </div>
           <button
             @click="close"
-            class="p-1 rounded hover:bg-muted text-muted-foreground transition"
+            class="w-8 h-8 inline-flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground transition"
             aria-label="Fechar"
           >
-            <X class="w-5 h-5" />
+            <X class="w-4 h-4" />
           </button>
         </header>
 
         <form @submit.prevent="submit" class="px-6 py-5 space-y-4">
           <div>
-            <label class="block text-sm font-medium mb-1.5" for="title">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2" for="title">
               Título <span class="text-destructive">*</span>
             </label>
             <input
@@ -95,12 +100,12 @@ function submit() {
               required
               maxlength="120"
               placeholder="Ex: Pagar guia do MEI"
-              class="w-full px-3 py-2 rounded-md bg-input text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-ring"
+              class="w-full px-4 py-3 rounded-md bg-input text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-primary transition"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-1.5" for="description">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2" for="description">
               Descrição
             </label>
             <textarea
@@ -109,13 +114,13 @@ function submit() {
               rows="2"
               maxlength="500"
               placeholder="Detalhes opcionais"
-              class="w-full px-3 py-2 rounded-md bg-input text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              class="w-full px-4 py-3 rounded-md bg-input text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-primary resize-none transition"
             ></textarea>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-sm font-medium mb-1.5" for="date">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2" for="date">
                 Data
               </label>
               <input
@@ -123,11 +128,11 @@ function submit() {
                 v-model="date"
                 type="date"
                 required
-                class="w-full px-3 py-2 rounded-md bg-input text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-ring"
+                class="w-full px-4 py-3 rounded-md bg-input text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-primary transition"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1.5" for="time">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2" for="time">
                 Hora
               </label>
               <input
@@ -135,19 +140,19 @@ function submit() {
                 v-model="time"
                 type="time"
                 required
-                class="w-full px-3 py-2 rounded-md bg-input text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-ring"
+                class="w-full px-4 py-3 rounded-md bg-input text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-primary transition"
               />
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-1.5" for="recurrence">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2" for="recurrence">
               Repetir
             </label>
             <select
               id="recurrence"
               v-model="recurrence"
-              class="w-full px-3 py-2 rounded-md bg-input text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-ring"
+              class="w-full px-4 py-3 rounded-md bg-input text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-primary transition"
             >
               <option value="once">Uma vez</option>
               <option value="daily">Todo dia</option>
@@ -155,17 +160,17 @@ function submit() {
             </select>
           </div>
 
-          <footer class="flex justify-end gap-2 pt-2">
+          <footer class="flex justify-end gap-2 pt-3">
             <button
               type="button"
               @click="close"
-              class="px-4 py-2 rounded-md border border-border bg-background hover:bg-muted transition text-sm font-medium"
+              class="px-5 py-2.5 rounded-xl border border-border bg-card hover:bg-muted transition text-sm font-medium"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              class="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium"
+              class="btn-primary px-5 py-2.5 rounded-xl text-primary-foreground text-sm font-semibold"
             >
               Criar lembrete
             </button>

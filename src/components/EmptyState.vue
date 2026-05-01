@@ -19,7 +19,7 @@ const Icon = computed(() =>
 const title = computed(() =>
   props.variant === 'completed'
     ? 'Nenhum concluído ainda'
-    : 'Nenhum lembrete ainda'
+    : 'Tudo limpo por aqui'
 )
 const description = computed(() =>
   props.variant === 'completed'
@@ -30,22 +30,27 @@ const showCreateButton = computed(() => props.variant === 'pending')
 </script>
 
 <template>
-  <div class="rounded-lg border border-border bg-card p-12 text-center">
-    <div
-      class="w-16 h-16 rounded-lg bg-accent text-accent-foreground mx-auto mb-6 flex items-center justify-center"
-    >
-      <component :is="Icon" class="w-8 h-8" />
+  <div class="glass rounded-xl p-16 text-center">
+    <div class="relative inline-flex mb-6">
+      <!-- Glow atrás do ícone -->
+      <div class="absolute inset-0 rounded-2xl bg-primary/20 blur-2xl"></div>
+
+      <div
+        class="relative w-20 h-20 rounded-2xl icon-badge text-primary-foreground flex items-center justify-center"
+      >
+        <component :is="Icon" class="w-10 h-10" />
+      </div>
     </div>
 
-    <h2 class="text-2xl font-bold mb-2">{{ title }}</h2>
-    <p class="text-muted-foreground max-w-md mx-auto mb-6">
+    <h2 class="text-2xl font-bold mb-2 tracking-tight">{{ title }}</h2>
+    <p class="text-muted-foreground max-w-md mx-auto mb-7 leading-relaxed">
       {{ description }}
     </p>
 
     <button
       v-if="showCreateButton"
       @click="$emit('create')"
-      class="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition"
+      class="btn-primary inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-primary-foreground font-semibold text-sm"
     >
       Criar primeiro lembrete
     </button>
