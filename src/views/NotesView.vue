@@ -119,11 +119,26 @@ function handleDelete(id: string) {
 
 <style scoped>
 .notes-board {
-  /* Padrão sutil de "papel" usando tinted background */
-  background:
+  /*
+   * Dot grid pattern (estilo Notion/Milanote/Figma) + glow laranja sutil no topo.
+   * Multi-layer background:
+   *   1. Gradient laranja radial no topo (sensação Apple)
+   *   2. Pontinhos de muted-foreground a cada 20px
+   *   3. Cor base do tema
+   */
+  background-color: hsl(var(--background));
+  background-image:
     radial-gradient(ellipse 80% 60% at 50% -10%, hsl(var(--primary) / 0.04), transparent 60%),
-    hsl(var(--background));
-  /* Espaço extra pra scroll: notas podem ir além da viewport */
+    radial-gradient(circle, hsl(var(--muted-foreground) / 0.22) 1px, transparent 1.5px);
+  background-size: auto, 20px 20px;
+  background-position: 0 0, 0 0;
   min-height: 100%;
+}
+
+:global(.dark) .notes-board {
+  /* Em dark, opacidade um pouco menor pros pontos não dominarem */
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% -10%, hsl(var(--primary) / 0.06), transparent 60%),
+    radial-gradient(circle, hsl(var(--muted-foreground) / 0.16) 1px, transparent 1.5px);
 }
 </style>
