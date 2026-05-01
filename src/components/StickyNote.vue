@@ -1,23 +1,26 @@
 <script setup lang="ts">
 /**
- * Sticky Note flutuante — renderizada dentro do board da NotesView.
+ * Sticky Note — renderizada dentro do board da NotesView.
  *
  * Coordenadas (`x`, `y`) são relativas ao board (container pai com
- * position:relative). O drag injeta a ref do board via Vue inject
- * pra calcular `event.clientX - boardRect.left` corretamente.
+ * position:relative). Drag manual via mouse events com `getRelativeMouse`
+ * baseado no `getBoundingClientRect()` do board (injetado via Vue inject).
  *
- * Comportamento:
- *   - Drag por toda a área (exceto textarea quando focado e botões)
- *   - Bouncy CSS transition pra balanço de papel ao soltar
- *   - Color picker no header (popover com 6 cores)
- *   - Botão X pra deletar
- *   - Debounce 400ms na edição de texto pra evitar IPC excessivo
+ * Cores: 6 predefinidas + 1 custom via input nativo type=color.
+ * `palette` é reativo ao `useTheme().isDark` — toggle de tema atualiza
+ * automaticamente.
  */
 
 import { ref, computed, onBeforeUnmount, inject, type Ref } from 'vue'
-import { X, Palette } from 'lucide-vue-next'
-import type { Note, NoteColor } from '@/types/note'
-import { NOTE_COLORS, COLOR_PALETTES } from '@/types/note'
+import { X, Palette, Plus } from 'lucide-vue-next'
+import type { Note, NoteColor, PresetNoteColor } from '@/types/note'
+import {
+  NOTE_COLORS,
+  COLOR_PALETTES,
+  resolvePalette,
+  isPresetColor,
+} from '@/types/note'
+import { useTheme } from '@/composables/useTheme'
 
 const props = defineProps<{
   note: Note
@@ -28,7 +31,9 @@ const emit = defineEmits<{
   delete: [id: string]
 }>()
 
-/** Container pai (NotesView board) — usado pra calcular coordenadas relativas. */
+const { isDark } = useTheme()
+
+/** Container pai (board da NotesView). */
 const boardRef = inject<Ref<HTMLElement | null>>('notesBoard', ref(null))
 
 const isDragging = ref(false)
@@ -37,14 +42,12 @@ const localPos = ref({ x: props.note.x, y: props.note.y })
 const localText = ref(props.note.text)
 const colorPickerOpen = ref(false)
 
-const isDarkMode = computed(() =>
-  document.documentElement.classList.contains('dark')
+/** Valor atual no input nativo de cor — preserva entre aberturas. */
+const customColorValue = ref<string>(
+  isPresetColor(props.note.color) ? '#F97316' : props.note.color
 )
 
-const palette = computed(() => {
-  const colors = COLOR_PALETTES[props.note.color]
-  return isDarkMode.value ? colors.dark : colors.light
-})
+const palette = computed(() => resolvePalette(props.note.color, isDark.value))
 
 function getRelativeMouse(event: MouseEvent): { x: number; y: number } | null {
   const board = boardRef.value
@@ -57,7 +60,6 @@ function getRelativeMouse(event: MouseEvent): { x: number; y: number } | null {
 }
 
 function startDrag(event: MouseEvent) {
-  // Não dragueia se clicou em controles ou textarea focada
   const target = event.target as HTMLElement
   if (target.closest('.no-drag')) return
   if (target.tagName === 'TEXTAREA' && document.activeElement === target) return
@@ -81,7 +83,6 @@ function onDrag(event: MouseEvent) {
   const mouse = getRelativeMouse(event)
   if (!mouse) return
 
-  // Clamp pra não sair do board (mantém pelo menos um pedaço visível)
   const x = Math.max(-160, mouse.x - dragOffset.value.x)
   const y = Math.max(0, mouse.y - dragOffset.value.y)
   localPos.value = { x, y }
@@ -119,8 +120,20 @@ function onTextBlur() {
   emit('update', { text: localText.value })
 }
 
-function selectColor(color: NoteColor) {
+function selectPresetColor(color: PresetNoteColor) {
   emit('update', { color })
+  colorPickerOpen.value = false
+}
+
+function onCustomColorPick(event: Event) {
+  const value = (event.target as HTMLInputElement).value
+  customColorValue.value = value
+  emit('update', { color: value })
+}
+
+function onCustomColorChange(event: Event) {
+  // Fecha o picker depois do user "confirmar" (close do input)
+  onCustomColorPick(event)
   colorPickerOpen.value = false
 }
 
@@ -128,10 +141,13 @@ function handleDelete() {
   emit('delete', props.note.id)
 }
 
-function colorPreview(color: NoteColor): string {
+/** Preview de uma cor preset pro botão circular do picker. */
+function presetPreview(color: PresetNoteColor): string {
   const p = COLOR_PALETTES[color]
-  return isDarkMode.value ? p.dark.bg : p.light.bg
+  return isDark.value ? p.dark.bg : p.light.bg
 }
+
+const isCustomActive = computed(() => !isPresetColor(props.note.color))
 </script>
 
 <template>
@@ -157,18 +173,48 @@ function colorPreview(color: NoteColor): string {
         >
           <Palette class="w-3 h-3" />
         </button>
+
+        <!-- Color picker popover SÓLIDO -->
         <div
           v-if="colorPickerOpen"
-          class="absolute top-full left-0 mt-1 flex gap-1 p-1.5 rounded bg-black/30 backdrop-blur-sm shadow-lg z-10"
+          class="color-picker"
+          @click.stop
         >
-          <button
-            v-for="color in NOTE_COLORS"
-            :key="color"
-            @click.stop="selectColor(color)"
-            class="w-5 h-5 rounded-full border border-black/10 hover:scale-110 transition-transform"
-            :style="{ background: colorPreview(color) }"
-            :aria-label="`Cor ${color}`"
-          />
+          <div class="grid grid-cols-4 gap-1.5">
+            <button
+              v-for="color in NOTE_COLORS"
+              :key="color"
+              @click.stop="selectPresetColor(color)"
+              class="color-swatch"
+              :class="{ selected: note.color === color }"
+              :style="{ background: presetPreview(color) }"
+              :aria-label="`Cor ${color}`"
+              :title="color"
+            />
+
+            <!-- Custom color via input nativo -->
+            <label
+              class="color-swatch custom-swatch"
+              :class="{ selected: isCustomActive }"
+              :style="{
+                background: isCustomActive ? note.color : 'transparent',
+              }"
+              :title="isCustomActive ? note.color : 'Escolher cor personalizada'"
+            >
+              <Plus
+                v-if="!isCustomActive"
+                class="w-3 h-3 text-muted-foreground"
+              />
+              <input
+                type="color"
+                :value="customColorValue"
+                @input="onCustomColorPick"
+                @change="onCustomColorChange"
+                class="sr-only"
+                aria-label="Cor personalizada"
+              />
+            </label>
+          </div>
         </div>
       </div>
 
@@ -211,7 +257,7 @@ function colorPreview(color: NoteColor): string {
   flex-direction: column;
   /* Bouncy easing — quando para de arrastar, faz settle natural */
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.2s ease-out;
+    box-shadow 0.2s ease-out, background 0.2s ease, color 0.2s ease;
   transform: rotate(var(--rotation, 0deg));
   transform-origin: top center;
   will-change: transform;
@@ -278,5 +324,79 @@ function colorPreview(color: NoteColor): string {
 
 .sticky-note-text::selection {
   background: rgba(0, 0, 0, 0.2);
+}
+
+/* ─── Color picker popover ─────────────────────────────── */
+.color-picker {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  padding: 8px;
+  background: hsl(var(--popover));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  box-shadow:
+    0 10px 30px -8px rgba(0, 0, 0, 0.25),
+    0 4px 10px -2px rgba(0, 0, 0, 0.1);
+  z-index: 30;
+}
+
+:global(.dark) .color-picker {
+  box-shadow:
+    0 10px 30px -8px rgba(0, 0, 0, 0.6),
+    0 4px 10px -2px rgba(0, 0, 0, 0.4);
+}
+
+.color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid hsl(var(--border));
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: transform 0.15s, border-color 0.15s;
+  position: relative;
+}
+
+.color-swatch:hover {
+  transform: scale(1.12);
+}
+
+.color-swatch.selected {
+  border-color: hsl(var(--primary));
+  border-width: 2px;
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+}
+
+.custom-swatch {
+  /* Custom slot tem visual de "+" quando vazio, ou cor escolhida */
+  background: transparent;
+  border: 1.5px dashed hsl(var(--border));
+}
+
+.custom-swatch:hover {
+  border-color: hsl(var(--primary));
+  border-style: solid;
+}
+
+.custom-swatch.selected {
+  border-style: solid;
+}
+
+/* sr-only pra esconder o input nativo de color sem afetar funcionalidade */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 </style>

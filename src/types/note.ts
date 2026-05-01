@@ -1,10 +1,11 @@
 /**
  * Tipos das notas adesivas (sticky notes).
  *
- * Notas são post-its visuais espalhados na tela via uma canvas window
- * transparente always-on-top. Cada nota tem posição (x, y), cor,
- * texto e uma rotação base aleatória pra parecer "natural"
- * (espalhadas como papéis reais, não alinhadas).
+ * `color` da nota pode ser:
+ *   - Uma das predefinidas (ver NOTE_COLORS) — usa COLOR_PALETTES com
+ *     variantes light/dark
+ *   - Um hex custom (ex: '#FF5733') — usa direto + getContrastText pra
+ *     decidir cor do texto baseado em luminância
  */
 
 export const NOTE_COLORS = [
@@ -16,39 +17,42 @@ export const NOTE_COLORS = [
   'purple',
 ] as const
 
-export type NoteColor = (typeof NOTE_COLORS)[number]
+export type PresetNoteColor = (typeof NOTE_COLORS)[number]
+
+/** Cor da nota: predefinida ou hex custom (#RRGGBB). */
+export type NoteColor = PresetNoteColor | string
 
 export interface Note {
   id: string
   text: string
-  /** Posição absoluta na tela. */
+  /** Posição absoluta dentro do board. */
   x: number
   y: number
   color: NoteColor
-  /** Rotação inicial -3° a +3° pra parecer espalhado (random na criação). */
+  /** Rotação inicial -3° a +3° (random na criação). */
   rotation: number
   createdAt: string
   updatedAt: string
 }
 
 export type NoteInput = Pick<Note, 'text' | 'x' | 'y' | 'color' | 'rotation'>
-
-/** Patch parcial — usado pelo update. */
 export type NotePatch = Partial<Pick<Note, 'text' | 'x' | 'y' | 'color'>>
 
-/**
- * Mapa de cores no tema light/dark.
- * Cada cor tem `bg` (fundo do post-it) e `text` (cor do texto).
- * Pastel claro pra parecer papel real.
- */
 export interface ColorPalette {
   bg: string
   text: string
 }
 
-export const COLOR_PALETTES: Record<NoteColor, { light: ColorPalette; dark: ColorPalette }> = {
+/**
+ * Paletas das 6 cores predefinidas. Cada uma tem variante light/dark.
+ * Light = tom claro estilo papel; dark = tom escuro com texto claro.
+ */
+export const COLOR_PALETTES: Record<
+  PresetNoteColor,
+  { light: ColorPalette; dark: ColorPalette }
+> = {
   yellow: {
-    light: { bg: '#FFFAE0', text: '#854D0E' }, // amarelo bem claro tipo papel
+    light: { bg: '#FFFAE0', text: '#854D0E' },
     dark: { bg: '#78350F', text: '#FEF3C7' },
   },
   pink: {
@@ -71,4 +75,42 @@ export const COLOR_PALETTES: Record<NoteColor, { light: ColorPalette; dark: Colo
     light: { bg: '#F5EBFF', text: '#5B21B6' },
     dark: { bg: '#4C1D95', text: '#E9D5FF' },
   },
+}
+
+export function isPresetColor(color: string): color is PresetNoteColor {
+  return (NOTE_COLORS as readonly string[]).includes(color)
+}
+
+/**
+ * Decide se o texto fica escuro ou claro baseado em luminância do bg.
+ * Usa coeficientes ITU-R BT.601 (perceptual). Threshold 0.55 calibrado
+ * pra cores tipo papel onde light bg ainda quer texto escuro.
+ */
+export function getContrastText(hex: string): string {
+  const cleaned = hex.replace('#', '')
+  if (cleaned.length !== 6) return '#1F2937'
+  const r = parseInt(cleaned.slice(0, 2), 16)
+  const g = parseInt(cleaned.slice(2, 4), 16)
+  const b = parseInt(cleaned.slice(4, 6), 16)
+  if (!Number.isFinite(r) || !Number.isFinite(g) || !Number.isFinite(b)) {
+    return '#1F2937'
+  }
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminance > 0.55 ? '#1F2937' : '#F9FAFB'
+}
+
+/**
+ * Resolve a paleta final pra renderização.
+ *   - Cor preset → variante light ou dark
+ *   - Cor custom (hex) → usa direto + getContrastText pro texto
+ */
+export function resolvePalette(
+  color: string,
+  isDark: boolean
+): ColorPalette {
+  if (isPresetColor(color)) {
+    const p = COLOR_PALETTES[color]
+    return isDark ? p.dark : p.light
+  }
+  return { bg: color, text: getContrastText(color) }
 }
