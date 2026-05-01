@@ -47,6 +47,8 @@ const api: NotifyMeAPI = {
     openExternal: (url: string): Promise<void> =>
       ipcRenderer.invoke('system:openExternal', url),
 
+    confirm: (options) => ipcRenderer.invoke('system:confirm', options),
+
     window: {
       minimize: () => ipcRenderer.send('window:minimize'),
       toggleMaximize: () => ipcRenderer.send('window:toggleMaximize'),

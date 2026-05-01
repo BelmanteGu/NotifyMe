@@ -37,6 +37,19 @@ export interface NotifyMeAPI {
     /** Abre uma URL HTTP/HTTPS no navegador padrão do usuário (não no Electron). */
     openExternal: (url: string) => Promise<void>
 
+    /**
+     * Mostra um diálogo de confirmação NATIVO do sistema (dialog.showMessageBox).
+     * Substitui o window.confirm() do navegador, que é feio e tem visual de web.
+     * Retorna true se o usuário clicou no botão de confirmar.
+     */
+    confirm: (options: {
+      message: string
+      detail?: string
+      confirmText?: string
+      cancelText?: string
+      destructive?: boolean
+    }) => Promise<boolean>
+
     /** Controles da janela main (usados pela title bar customizada). */
     window: {
       minimize: () => void

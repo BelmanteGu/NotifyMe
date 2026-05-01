@@ -103,7 +103,7 @@ function submit() {
           <div>
             <h2 id="modal-title" class="text-lg font-bold tracking-tight">Novo lembrete</h2>
             <p class="text-xs text-muted-foreground mt-0.5">
-              Vai aparecer no horário escolhido — e não some até você confirmar.
+              Vai aparecer no horário escolhido. Não some até você confirmar.
             </p>
           </div>
           <button
@@ -227,7 +227,7 @@ function submit() {
             <AlertCircle class="w-4 h-4 mt-0.5 flex-shrink-0" />
             <span>
               <template v-if="!title.trim()">Título é obrigatório.</template>
-              <template v-else>Data ou hora inválida — confira o formato.</template>
+              <template v-else>Data ou hora inválida. Confira o formato.</template>
             </span>
           </div>
 

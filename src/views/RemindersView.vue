@@ -27,9 +27,13 @@ const visibleList = computed(() =>
 
 async function handleClearCompleted() {
   if (completed.value.length === 0) return
-  const ok = window.confirm(
-    `Apagar definitivamente ${completed.value.length} lembrete(s) concluído(s)? Não dá pra desfazer.`
-  )
+  const ok = await window.notifyme.system.confirm({
+    message: `Apagar ${completed.value.length} lembrete(s) concluído(s)?`,
+    detail: 'Não dá pra desfazer.',
+    confirmText: 'Apagar',
+    cancelText: 'Cancelar',
+    destructive: true,
+  })
   if (!ok) return
   await clearCompleted()
 }

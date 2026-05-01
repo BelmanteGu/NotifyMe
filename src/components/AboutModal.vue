@@ -93,7 +93,7 @@ function openLink(url: string) {
             </div>
             <p class="text-xs text-muted-foreground mb-4 leading-relaxed">
               O NotifyMe é gratuito e open source. Se ele te ajuda no dia a dia,
-              considere uma doação — ajuda a manter o projeto ativo.
+              considere uma doação. Ajuda a manter o projeto ativo.
             </p>
             <div class="grid grid-cols-2 gap-2">
               <button
