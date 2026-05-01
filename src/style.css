@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Sistema de cores HSL — mesma estrutura do Cliloop (shadcn-vue).
+ * Trocando a primary indigo por LARANJA.
+ *
+ * Light mode primary:  hsl(24 95% 53%)  = #F97316
+ * Dark mode primary:   hsl(24 95% 60%)  = #FB8E3C (mais claro p/ contraste)
+ */
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 24 100% 96%;
+    --accent-foreground: 24 90% 30%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 94%;
+    --ring: 24 95% 53%;
+
+    --radius: 15px;
+  }
+
+  .dark {
+    --background: 240 10% 5.5%;
+    --foreground: 0 0% 92.5%;
+
+    --card: 240 5% 11%;
+    --card-foreground: 0 0% 92.5%;
+
+    --popover: 240 5% 11%;
+    --popover-foreground: 0 0% 92.5%;
+
+    --primary: 24 95% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 10% 7.8%;
+    --secondary-foreground: 0 0% 63%;
+
+    --muted: 240 4% 15%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 240 4% 15%;
+    --accent-foreground: 24 95% 70%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 240 10% 5.5%;
+
+    --border: 240 4% 15%;
+    --input: 240 10% 11%;
+    --ring: 24 95% 60%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select: none;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', 'Inter', sans-serif;
+    @apply text-foreground;
+  }
+
+  html {
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+}
