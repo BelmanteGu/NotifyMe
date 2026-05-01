@@ -1,102 +1,100 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed } from 'vue'
+import { Bell, Plus } from 'lucide-vue-next'
+import ThemeToggle from '@/components/ThemeToggle.vue'
+import ReminderCard from '@/components/ReminderCard.vue'
+import ReminderModal from '@/components/ReminderModal.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import type { Reminder, ReminderInput } from '@/types/reminder'
+import { mockReminders } from '@/data/mockReminders'
 
-// Tema light/dark — controlado via classe .dark no <html>.
-// Mesma abordagem do Cliloop.
-const isDark = ref(false)
+/**
+ * Estado raiz do app na Fase 1.
+ *
+ * Os lembretes vivem em memória — nada é persistido. Reiniciou o app, sumiu.
+ * Isso muda na Fase 2 (SQLite via IPC).
+ */
+const reminders = ref<Reminder[]>([...mockReminders])
+const modalOpen = ref(false)
 
-function toggleTheme() {
-  isDark.value = !isDark.value
-  document.documentElement.classList.toggle('dark', isDark.value)
+const sortedReminders = computed(() =>
+  [...reminders.value].sort(
+    (a, b) => new Date(a.triggerAt).getTime() - new Date(b.triggerAt).getTime()
+  )
+)
+
+function handleSave(input: ReminderInput) {
+  const reminder: Reminder = {
+    ...input,
+    id: `r-${Date.now()}`,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  }
+  reminders.value.push(reminder)
 }
-
-onMounted(() => {
-  // Detecta preferência do SO no primeiro boot
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  isDark.value = prefersDark
-  document.documentElement.classList.toggle('dark', prefersDark)
-})
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col">
-    <header class="border-b border-border bg-card">
+    <header class="border-b border-border bg-card sticky top-0 z-10">
       <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div
-            class="w-9 h-9 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg"
+            class="w-9 h-9 rounded-md bg-primary text-primary-foreground flex items-center justify-center"
           >
-            N
+            <Bell class="w-5 h-5" />
           </div>
           <div>
-            <h1 class="text-xl font-bold leading-none">NotifyMe</h1>
+            <h1 class="text-lg font-bold leading-none">NotifyMe</h1>
             <p class="text-xs text-muted-foreground mt-0.5">
               Lembretes que não somem
             </p>
           </div>
         </div>
 
-        <button
-          @click="toggleTheme"
-          class="px-3 py-2 rounded-md border border-border bg-background hover:bg-muted text-sm transition"
-        >
-          {{ isDark ? 'Light' : 'Dark' }}
-        </button>
+        <div class="flex items-center gap-2">
+          <ThemeToggle />
+
+          <button
+            @click="modalOpen = true"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition text-sm"
+          >
+            <Plus class="w-4 h-4" />
+            Novo lembrete
+          </button>
+        </div>
       </div>
     </header>
 
-    <main class="flex-1 max-w-5xl mx-auto w-full px-6 py-12">
-      <div class="rounded-lg border border-border bg-card p-12 text-center">
-        <div
-          class="w-16 h-16 rounded-lg bg-primary text-primary-foreground mx-auto mb-6 flex items-center justify-center text-3xl font-bold"
-        >
-          N
-        </div>
-
-        <h2 class="text-3xl font-bold mb-3">Olá, NotifyMe!</h2>
-        <p class="text-muted-foreground max-w-md mx-auto mb-8">
-          Setup inicial concluído. A partir daqui, vamos construir
-          a UI da lista de lembretes na <strong>Fase 1</strong>.
-        </p>
-
-        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium">
-          <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-          Fase 0 — Setup base concluído
-        </div>
+    <main class="flex-1 max-w-5xl mx-auto w-full px-6 py-8">
+      <div class="mb-6 flex items-center justify-between">
+        <h2 class="text-2xl font-bold font-heading">Meus lembretes</h2>
+        <span class="text-sm text-muted-foreground">
+          {{ reminders.length }}
+          {{ reminders.length === 1 ? 'lembrete' : 'lembretes' }}
+        </span>
       </div>
 
-      <div class="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="rounded-md border border-border bg-card p-5">
-          <div class="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-            Stack
-          </div>
-          <div class="font-semibold">Electron + Vue 3</div>
-          <div class="text-xs text-muted-foreground mt-1">TypeScript + Vite + Tailwind</div>
-        </div>
+      <EmptyState v-if="reminders.length === 0" @create="modalOpen = true" />
 
-        <div class="rounded-md border border-border bg-card p-5">
-          <div class="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-            Licença
-          </div>
-          <div class="font-semibold">MIT</div>
-          <div class="text-xs text-muted-foreground mt-1">Open source, doações bem-vindas</div>
-        </div>
-
-        <div class="rounded-md border border-border bg-card p-5">
-          <div class="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-            Plataforma
-          </div>
-          <div class="font-semibold">Windows 10/11</div>
-          <div class="text-xs text-muted-foreground mt-1">Userspace puro, sem driver</div>
-        </div>
+      <div v-else class="space-y-3">
+        <ReminderCard
+          v-for="reminder in sortedReminders"
+          :key="reminder.id"
+          :reminder="reminder"
+        />
       </div>
     </main>
 
     <footer class="border-t border-border bg-card">
-      <div class="max-w-5xl mx-auto px-6 py-4 text-xs text-muted-foreground flex justify-between">
-        <span>NotifyMe v0.0.1 — Fase 0</span>
+      <div
+        class="max-w-5xl mx-auto px-6 py-4 text-xs text-muted-foreground flex justify-between"
+      >
+        <span>NotifyMe v0.0.1 — Fase 1</span>
         <span>github.com/BelmanteGu/notifyme</span>
       </div>
     </footer>
+
+    <ReminderModal v-model:open="modalOpen" @save="handleSave" />
   </div>
 </template>
