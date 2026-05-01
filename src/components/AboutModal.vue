@@ -114,6 +114,16 @@ async function copyPix() {
               considere uma doação via PIX — ajuda a manter o projeto ativo.
             </p>
 
+            <!-- CNPJ em card destacado pra ficar visível -->
+            <div class="rounded-md bg-card border border-border px-4 py-3 mb-2">
+              <div class="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 font-semibold">
+                Chave PIX (CNPJ)
+              </div>
+              <div class="font-mono text-base font-semibold tracking-wider select-text text-foreground">
+                {{ pixKey }}
+              </div>
+            </div>
+
             <button
               @click="copyPix"
               class="w-full px-4 py-3 rounded-xl border bg-card hover:bg-muted transition inline-flex items-center justify-center gap-2 text-sm font-semibold"
@@ -122,12 +132,8 @@ async function copyPix() {
             >
               <Check v-if="pixCopied" class="w-4 h-4" />
               <Copy v-else class="w-4 h-4" />
-              {{ pixCopied ? 'Chave copiada!' : 'Copiar chave PIX' }}
+              {{ pixCopied ? 'CNPJ copiado!' : 'Copiar CNPJ' }}
             </button>
-
-            <p class="text-[11px] text-muted-foreground text-center mt-3 font-mono select-text">
-              CNPJ: {{ pixKey }}
-            </p>
           </div>
 
           <p class="text-xs text-muted-foreground text-center">
