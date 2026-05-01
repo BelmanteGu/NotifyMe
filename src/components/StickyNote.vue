@@ -180,7 +180,8 @@ const isCustomActive = computed(() => !isPresetColor(props.note.color))
           class="color-picker"
           @click.stop
         >
-          <div class="grid grid-cols-4 gap-1.5">
+          <div class="color-picker-title">Cor da nota</div>
+          <div class="color-picker-grid">
             <button
               v-for="color in NOTE_COLORS"
               :key="color"
@@ -203,7 +204,7 @@ const isCustomActive = computed(() => !isPresetColor(props.note.color))
             >
               <Plus
                 v-if="!isCustomActive"
-                class="w-3 h-3 text-muted-foreground"
+                class="w-4 h-4 text-muted-foreground"
               />
               <input
                 type="color"
@@ -214,6 +215,9 @@ const isCustomActive = computed(() => !isPresetColor(props.note.color))
                 aria-label="Cor personalizada"
               />
             </label>
+          </div>
+          <div v-if="isCustomActive" class="color-picker-hex">
+            {{ note.color }}
           </div>
         </div>
       </div>
@@ -331,51 +335,81 @@ const isCustomActive = computed(() => !isPresetColor(props.note.color))
   position: absolute;
   top: 100%;
   left: 0;
-  margin-top: 6px;
-  padding: 8px;
+  margin-top: 8px;
+  padding: 14px;
   background: hsl(var(--popover));
   border: 1px solid hsl(var(--border));
-  border-radius: 8px;
+  border-radius: 12px;
   box-shadow:
-    0 10px 30px -8px rgba(0, 0, 0, 0.25),
-    0 4px 10px -2px rgba(0, 0, 0, 0.1);
+    0 14px 36px -10px rgba(0, 0, 0, 0.28),
+    0 6px 14px -4px rgba(0, 0, 0, 0.12);
   z-index: 30;
+  /* Cor do TEXTO do popover usa o tema do app, não o text da nota */
+  color: hsl(var(--foreground));
 }
 
 :global(.dark) .color-picker {
   box-shadow:
-    0 10px 30px -8px rgba(0, 0, 0, 0.6),
-    0 4px 10px -2px rgba(0, 0, 0, 0.4);
+    0 14px 36px -10px rgba(0, 0, 0, 0.7),
+    0 6px 14px -4px rgba(0, 0, 0, 0.5);
+}
+
+.color-picker-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 10px;
+  white-space: nowrap;
+}
+
+.color-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 32px);
+  gap: 10px;
+}
+
+.color-picker-hex {
+  margin-top: 10px;
+  padding: 6px 8px;
+  background: hsl(var(--muted));
+  border-radius: 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .color-swatch {
-  width: 22px;
-  height: 22px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  border: 1.5px solid hsl(var(--border));
+  border: 2px solid hsl(var(--border));
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: transform 0.15s, border-color 0.15s;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
   position: relative;
 }
 
 .color-swatch:hover {
-  transform: scale(1.12);
+  transform: scale(1.1);
+  border-color: hsl(var(--muted-foreground) / 0.4);
 }
 
 .color-swatch.selected {
   border-color: hsl(var(--primary));
-  border-width: 2px;
-  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.2);
 }
 
 .custom-swatch {
-  /* Custom slot tem visual de "+" quando vazio, ou cor escolhida */
   background: transparent;
-  border: 1.5px dashed hsl(var(--border));
+  border: 2px dashed hsl(var(--border));
 }
 
 .custom-swatch:hover {
