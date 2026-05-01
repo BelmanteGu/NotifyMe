@@ -23,9 +23,9 @@ asar: true
 
 # Configuracoes do Windows
 win:
-  # Target do icone — se build/icon.ico existir, usa.
-  # Senao, electron-builder pega o icone padrao do Electron.
-  # icon: build/icon.ico
+  # Icone do app — electron-builder converte automaticamente PNG em ICO
+  # multi-resolucao no Windows desde que o PNG tenha pelo menos 256x256.
+  icon: build/icon.png
   target:
     - target: nsis
       arch:

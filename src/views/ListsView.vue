@@ -478,8 +478,9 @@ function formatDateBR(iso: string): string {
 
 <style scoped>
 /*
- * Página de caderno SEMPRE clara. Independe do tema do app.
- * Caderno é caderno — papel é papel.
+ * Página de caderno — papel pautado com margem vermelha.
+ * Light: papel off-white #fffef7 com linhas azul-acinzentado.
+ * Dark: papel escuro #1c1c1f com linhas mais sutis.
  */
 .task-list-page {
   position: relative;
@@ -501,6 +502,23 @@ function formatDateBR(iso: string): string {
   background-size: 100% 32px;
 }
 
+:global(.dark) .task-list-page {
+  background: #1c1c1f;
+  color: #ECECED;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 31px,
+    rgba(138, 161, 199, 0.12) 31px,
+    rgba(138, 161, 199, 0.12) 32px
+  );
+  background-position: 0 96px;
+  background-size: 100% 32px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
 /* Margem vermelha vertical */
 .task-list-page::before {
   content: '';
@@ -512,6 +530,10 @@ function formatDateBR(iso: string): string {
   background: rgba(239, 68, 68, 0.45);
 }
 
+:global(.dark) .task-list-page::before {
+  background: rgba(252, 165, 165, 0.32);
+}
+
 .page-header {
   display: flex;
   align-items: baseline;
@@ -520,6 +542,10 @@ function formatDateBR(iso: string): string {
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px dashed rgba(99, 132, 168, 0.25);
+}
+
+:global(.dark) .page-header {
+  border-bottom-color: rgba(138, 161, 199, 0.25);
 }
 
 .page-title-input {
@@ -534,8 +560,16 @@ function formatDateBR(iso: string): string {
   letter-spacing: -0.01em;
 }
 
+:global(.dark) .page-title-input {
+  color: #ECECED;
+}
+
 .page-title-input::placeholder {
   color: rgba(31, 41, 55, 0.35);
+}
+
+:global(.dark) .page-title-input::placeholder {
+  color: rgba(236, 236, 237, 0.3);
 }
 
 .page-date-input {
@@ -548,6 +582,11 @@ function formatDateBR(iso: string): string {
   color: rgba(31, 41, 55, 0.55);
   cursor: pointer;
   color-scheme: light;
+}
+
+:global(.dark) .page-date-input {
+  color: rgba(236, 236, 237, 0.6);
+  color-scheme: dark;
 }
 
 .task-items {
@@ -580,6 +619,10 @@ function formatDateBR(iso: string): string {
   padding: 0;
 }
 
+:global(.dark) .task-checkbox {
+  border-color: rgba(138, 161, 199, 0.5);
+}
+
 .task-checkbox:hover {
   border-color: hsl(var(--primary));
 }
@@ -595,6 +638,10 @@ function formatDateBR(iso: string): string {
   cursor: default;
 }
 
+:global(.dark) .task-checkbox.add-placeholder {
+  color: rgba(138, 161, 199, 0.55);
+}
+
 .task-text {
   flex: 1;
   background: transparent;
@@ -608,13 +655,25 @@ function formatDateBR(iso: string): string {
   padding: 0;
 }
 
+:global(.dark) .task-text {
+  color: #ECECED;
+}
+
 .task-text::placeholder {
   color: rgba(31, 41, 55, 0.4);
+}
+
+:global(.dark) .task-text::placeholder {
+  color: rgba(236, 236, 237, 0.35);
 }
 
 .task-text.done {
   text-decoration: line-through;
   color: rgba(31, 41, 55, 0.5);
+}
+
+:global(.dark) .task-text.done {
+  color: rgba(236, 236, 237, 0.4);
 }
 
 .task-remove {
@@ -631,6 +690,10 @@ function formatDateBR(iso: string): string {
   justify-content: center;
   opacity: 0;
   transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+:global(.dark) .task-remove {
+  color: rgba(236, 236, 237, 0.35);
 }
 
 .task-item:hover .task-remove {
