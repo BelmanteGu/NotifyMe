@@ -39,13 +39,12 @@ App desktop pequeno e gratuito, com **3 funcionalidades** integradas:
 - Toggle em **Configurações** pra ligar/desligar
 
 ### 📝 Sticky notes
-- Post-its visuais espalhados na tela, sempre por cima de tudo
-- 6 cores selecionáveis por nota
-- Drag & drop com animação de papel balançando ao soltar
+- Aba "Notas" com um board interno onde você cria post-its coloridos
+- 6 cores selecionáveis por nota (amarelo, rosa, azul, verde, laranja, roxo)
+- Drag & drop dentro do board com animação de papel balançando ao soltar
 - Cada nota tem texto editável inline
-- Botão "+" pra criar novas
-- Tudo persistido entre sessões
-- Toggle em **Configurações**
+- Botão "Nova nota" pra criar
+- Tudo persistido entre sessões em `notes.json`
 
 ## Outras features
 

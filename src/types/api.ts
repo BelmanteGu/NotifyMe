@@ -71,8 +71,6 @@ export interface NotifyMeAPI {
     delete: (id: string) => Promise<boolean>
     clear: () => Promise<number>
     onChanged: (callback: () => void) => () => void
-    /** Liga/desliga captura de mouse na canvas (chamar em hover enter/leave). */
-    setMouseInteractive: (interactive: boolean) => void
   }
 
   /**

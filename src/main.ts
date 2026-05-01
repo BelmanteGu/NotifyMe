@@ -3,7 +3,6 @@ import App from './App.vue'
 import AlertView from './views/AlertView.vue'
 import TimerAlertView from './views/TimerAlertView.vue'
 import WidgetView from './views/WidgetView.vue'
-import NotesCanvasView from './views/NotesCanvasView.vue'
 import './style.css'
 
 /**
@@ -14,7 +13,6 @@ import './style.css'
  *   - ?view=alert&id=xxx → AlertView (janela de lembrete)
  *   - ?view=timer-alert → TimerAlertView (alarme do timer)
  *   - ?view=widget → WidgetView (widget flutuante)
- *   - ?view=notes-canvas → NotesCanvasView (overlay com sticky notes)
  */
 const params = new URLSearchParams(window.location.search)
 const view = params.get('view')
@@ -26,8 +24,6 @@ if (view === 'alert') {
   createApp(TimerAlertView).mount('#app')
 } else if (view === 'widget') {
   createApp(WidgetView).mount('#app')
-} else if (view === 'notes-canvas') {
-  createApp(NotesCanvasView).mount('#app')
 } else {
   createApp(App).mount('#app')
 }

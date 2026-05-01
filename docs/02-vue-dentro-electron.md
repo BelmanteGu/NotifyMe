@@ -51,7 +51,7 @@ src/
 │   ├── AlertView.vue             ← janela de alerta de lembrete (separada)
 │   ├── TimerAlertView.vue        ← janela de alarme do timer (loop)
 │   ├── WidgetView.vue            ← widget flutuante always-on-top
-│   └── NotesCanvasView.vue       ← overlay transparente com sticky notes
+│   └── NotesView.vue             ← aba "Notas" com board interno (sticky notes)
 │
 ├── composables/                  ← state + lógica reativa
 │   ├── useTheme.ts               ← light/dark + localStorage

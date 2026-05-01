@@ -38,29 +38,6 @@ const { settings, set } = useSettings()
       </div>
     </section>
 
-    <!-- Sticky notes -->
-    <section class="glass rounded-lg p-6 mb-4">
-      <h3 class="text-base font-bold mb-4 tracking-tight">Notas adesivas</h3>
-
-      <div class="flex items-start gap-4">
-        <div class="flex-1">
-          <div class="font-medium text-foreground">
-            Espalhar notas adesivas na tela
-          </div>
-          <p class="text-sm text-muted-foreground mt-1 leading-relaxed">
-            Post-its visuais sempre por cima de tudo, em qualquer lugar
-            da tela. Cada nota pode ter cor própria, ser arrastada e
-            editada. Botão "+" no canto inferior direito cria uma nova.
-          </p>
-        </div>
-        <Switch
-          :model-value="settings.showNotesCanvas"
-          @update:model-value="(v) => set('showNotesCanvas', v)"
-          aria-label="Espalhar notas adesivas"
-        />
-      </div>
-    </section>
-
     <!-- Sobre / informação adicional -->
     <section class="glass rounded-lg p-6">
       <h3 class="text-base font-bold mb-2 tracking-tight">Sobre</h3>

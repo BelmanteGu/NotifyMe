@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Bell, Timer, Clock4, Settings as SettingsIcon, Info } from 'lucide-vue-next'
+import { Bell, Timer, Clock4, StickyNote, Settings as SettingsIcon, Info } from 'lucide-vue-next'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 
-export type View = 'reminders' | 'timer' | 'stopwatch' | 'settings'
+export type View = 'reminders' | 'timer' | 'stopwatch' | 'notes' | 'settings'
 
 defineProps<{
   current: View
@@ -17,6 +17,7 @@ const items = [
   { id: 'reminders' as const, label: 'Lembretes', icon: Bell },
   { id: 'timer' as const, label: 'Timer', icon: Timer },
   { id: 'stopwatch' as const, label: 'Cronômetro', icon: Clock4 },
+  { id: 'notes' as const, label: 'Notas', icon: StickyNote },
   { id: 'settings' as const, label: 'Configurações', icon: SettingsIcon },
 ]
 </script>

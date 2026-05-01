@@ -20,11 +20,6 @@ import { showReminderNotification } from './services/notifications'
 import { openAlertWindow, closeAllAlertWindows } from './windows/alertWindow'
 import { openTimerAlertWindow, closeTimerAlertWindow } from './windows/timerAlertWindow'
 import { openWidgetWindow, closeWidgetWindow, isWidgetOpen } from './windows/widgetWindow'
-import {
-  openNotesCanvas,
-  closeNotesCanvas,
-  setNotesCanvasMouseInteractive,
-} from './windows/notesCanvasWindow'
 import { NotesService } from './services/notes'
 import { getNotesStore } from './store/notes'
 import { registerNotesIPC } from './ipc/notes'
@@ -78,7 +73,6 @@ if (!gotLock) {
     closeAllAlertWindows(alertWindows)
     closeTimerAlertWindow()
     closeWidgetWindow()
-    closeNotesCanvas()
     destroyTray()
   })
 
@@ -158,22 +152,6 @@ function notifyNotesChanged() {
   broadcastToAllWindows('notes:changed')
 }
 
-// ─── Notes canvas orchestration ───────────────────────────────────
-function updateNotesCanvasVisibility() {
-  const settings = settingsStore?.store
-  if (!settings) return
-
-  if (settings.showNotesCanvas) {
-    openNotesCanvas({
-      rendererDist: RENDERER_DIST,
-      devServerUrl: VITE_DEV_SERVER_URL,
-      preloadPath: PRELOAD_PATH,
-    })
-  } else {
-    closeNotesCanvas()
-  }
-}
-
 // ─── Widget orchestration ─────────────────────────────────────────
 let lastWidgetMode: 'timer' | 'stopwatch' | null = null
 
@@ -243,13 +221,10 @@ function initialize() {
 
     registerRemindersIPC(remindersService, scheduler, notifyRendererChanged)
 
-    // Notes — service + IPC + canvas orchestration
+    // Notes — service + IPC
     const notesStore = getNotesStore()
     const notesService = new NotesService(notesStore)
     registerNotesIPC(notesService, notifyNotesChanged)
-    ipcMain.on('notes:setMouseInteractive', (_event, interactive: boolean) => {
-      setNotesCanvasMouseInteractive(interactive)
-    })
 
     // ─── Timer + Cronômetro ──────────────────────────────
     timerService = new TimerService()
@@ -296,8 +271,6 @@ function initialize() {
         broadcastToAllWindows('settings:changed', settingsStore.store)
         if (key === 'showWidget') {
           updateWidgetVisibility()
-        } else if (key === 'showNotesCanvas') {
-          updateNotesCanvasVisibility()
         }
       }
     )
@@ -333,8 +306,6 @@ function initialize() {
 
     mainWin?.webContents.once('did-finish-load', () => {
       scheduler?.start()
-      // Se o user já tinha showNotesCanvas=true salvo, abre na inicialização
-      updateNotesCanvasVisibility()
     })
   } catch (error) {
     const err = error as Error

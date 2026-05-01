@@ -17,9 +17,6 @@ export interface Settings {
   /** Tamanho do widget. */
   widgetWidth: number
   widgetHeight: number
-
-  /** Espalha sticky notes na tela como overlay always-on-top. */
-  showNotesCanvas: boolean
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -28,5 +25,4 @@ export const DEFAULT_SETTINGS: Settings = {
   widgetY: null,
   widgetWidth: 280,
   widgetHeight: 150,
-  showNotesCanvas: false,
 }

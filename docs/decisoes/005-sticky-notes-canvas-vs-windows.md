@@ -1,122 +1,96 @@
-# 005 — Sticky notes: canvas única vs múltiplas janelas
+# 005 — Sticky notes: aba interna (não janela overlay nem múltiplas)
 
-- **Data**: 2026-05-01
+- **Data**: 2026-05-01 (revisada após primeira tentativa)
 - **Status**: aceita
-- **Contexto**: o usuário pediu "post-its físicos espalhados na tela",
-  com cores selecionáveis, drag & drop e animação de balanço como
-  papel. A primeira pergunta arquitetural: **cada nota deve ser uma
-  janela própria, ou uma janela única "canvas" com todas as notas
-  como divs internos?**
+- **Contexto**: o usuário pediu "post-its físicos espalhados na tela".
+  Avaliamos 3 abordagens: (a) uma BrowserWindow por nota, (b) uma
+  canvas window transparente fullscreen com todas as notas, (c) aba
+  interna na janela main com um board onde as notas vivem.
 
 ## Decisão
 
-**Uma canvas única**: BrowserWindow transparente fullscreen
-always-on-top. As notas vivem como `<div>`s Vue posicionados
-absolutamente dentro dela.
+**Aba interna na janela main**. Quarta seção da sidebar ("Notas"),
+com um board interno (container `position: relative` + `overflow: auto`)
+onde cada nota fica `position: absolute`.
 
-## Alternativas consideradas
+## Histórico — primeiras tentativas e por que mudamos
 
-### A — Uma BrowserWindow por nota
+### Primeira tentativa: canvas window transparente fullscreen
 
-Cada post-it vira uma janela própria, frame:false, alwaysOnTop, com
-seu próprio Renderer process.
+Implementamos uma `BrowserWindow` `transparent: true`, frame:false,
+fullscreen, always-on-top, com `setIgnoreMouseEvents(true, { forward:
+true })` pra deixar clicks atravessarem onde não tem nota.
 
-**Prós**:
-- Movível pelo Windows nativo (não precisa implementar drag manual)
-- Cada nota tem isolamento completo (crash de uma não afeta as outras)
-- Resize com bordas nativas do Windows
+**O que estava bom**:
+- ~50MB de RAM independente do número de notas
+- Notas visíveis sobre qualquer app (Chrome, Word, etc)
+- Animação de papel balançando funcional
 
-**Contras**:
-- **Pesado**: cada BrowserWindow carrega ~30-50MB de Chromium. Com
-  10 notas, isso é 300-500MB extra de RAM. Inaceitável pra um app
-  que se vende como "leve" e fica rodando 24/7 na tray.
-- Sombra do Windows torna o efeito "papel" menos convincente
-- Cada janela tem seu próprio ciclo de vida → mais bugs potenciais
-- Alt+F4 fecha a nota (pode ser indesejado)
+**Por que mudamos**:
+- **UX confusa**: NotifyMe ficava sobreposto a tudo o tempo todo
+  quando a feature estava ativa. Usuário não tinha distinção clara
+  entre "estou no app" e "estou em outra coisa"
+- **Performance imprevisível**: window transparent + always-on-top em
+  Windows tem comportamentos esquisitos (sombra esquisita, snap
+  layouts confusos)
+- **Mouse pass-through frágil**: `setIgnoreMouseEvents` precisa ser
+  gerenciado dinamicamente em hover, susceptível a race conditions
+  quando o cursor passa rapidamente entre notas adjacentes
+- **Multi-monitor**: canvas só cobria o primary display
 
-**Descartado**: o custo de RAM mata o caso de uso.
+### Segunda tentativa (descartada): janela por nota
 
-### B — Uma BrowserWindow canvas única
+Cada nota como `BrowserWindow` própria.
 
-Janela única transparent + fullscreen + alwaysOnTop. Notas são divs
-internos posicionados via `position: absolute`. Drag implementado
-com mousedown/mousemove no Vue.
+**Descartado** porque cada janela carrega ~30-50MB de Chromium. 10
+notas = 300-500MB extra. Inaceitável pra um app que se vende como leve.
 
-**Prós**:
-- **Leve**: ~50MB total independente do número de notas
-- Controle total de visual (sombra, rotação, animações CSS)
-- Sincronização entre notas trivial (mesmo state Vue)
-- Click-through gerenciável via `setIgnoreMouseEvents`
+### Solução final: aba interna
 
-**Contras**:
-- Drag implementado manualmente (~30 linhas de Vue)
-- Sem resize nativo — precisaria implementar handle com mousedown
-- Single monitor por padrão (pra cobrir múltiplos seria mais complexo)
+NotesView é uma view normal da sidebar. Notas são divs absolutos
+dentro de um board scrollável. Drag manual via mouse events com
+coordenadas relativas ao board (via Vue inject).
 
-**Escolhido**.
+## Por que aba interna venceu
 
-### C — Web overlay sem Electron (Win32 native)
+| Critério | Janela por nota | Canvas overlay | Aba interna |
+|---|---|---|---|
+| RAM com 10 notas | ~500MB | ~50MB | ~0 (já tá rodando) |
+| Sempre por cima | ✅ | ✅ | ❌ |
+| Visual coerente com app | ❌ | ⚠️ | ✅ |
+| Esforço | Alto | Médio | Baixo |
+| Multi-monitor | ✅ | ❌ | ✅ |
+| Sem mouse pass-through | ✅ | ❌ | ✅ |
+| Sente parte do app | ❌ | ❌ | ✅ |
 
-Usar API nativa do Windows pra criar uma janela transparente click-through
-e desenhar via Direct2D ou GDI+.
-
-**Prós**:
-- Performance máxima
-- Integração profunda com a shell do Windows
-
-**Contras**:
-- Inviável: precisaria de C++/C# nativo, FFI complexa
-- Cross-platform morto (mesmo que NotifyMe seja Windows-only hoje)
-- Manutenção pesada
-
-**Descartado**.
-
-### D — `<dialog>` HTML em vez de janela
-
-Usar elemento `<dialog>` nativo do navegador no Renderer da janela main.
-
-**Prós**:
-- Zero janelas extras
-
-**Contras**:
-- Não é always-on-top quando outra app está em foco
-- Anula o ponto da feature ("vejo as notas mesmo no Chrome/Word")
-
-**Descartado**.
-
-## Por que canvas única venceu
-
-Tabela resumo:
-
-| Critério | A (uma por nota) | B (canvas) | C (Win32) | D (dialog HTML) |
-|---|---|---|---|---|
-| RAM com 10 notas | ~500MB | ~50MB | ~10MB | 0 (já tá rodando) |
-| Always-on-top | ✅ | ✅ | ✅ | ❌ |
-| Esforço de implementação | Baixo | Médio | Altíssimo | Trivial |
-| Visual papel/balanço | Difícil (sombra Win) | ✅ | ✅ | Limitado |
-| Multi-monitor | Trivial | Médio | Médio | N/A |
-
-A canvas única ganha em **leveza + esforço + visual**, perdendo um pouco
-em multi-monitor (mitigável depois).
+A "always-on-top" não é mais um requisito. Pra ver as notas, o usuário
+vai na aba "Notas" da sidebar. Se quer ter elas visíveis junto com
+outras coisas, abre o app numa janela ao lado de Chrome/Word.
 
 ## Consequências
 
 ### O que ganhamos
-- App continua "leve": +50MB pra feature inteira
-- Animação de balanço CSS-only (zero JavaScript bouncy logic)
-- Cores e visual customizáveis sem limite
-- Sincronização trivial entre notas
+- App continua leve e coeso
+- Sem mouse pass-through (uma classe de bugs eliminada)
+- Sem conflito com snap layouts / sombra do Windows
+- Multi-monitor "grátis" (a janela main já move entre displays)
+- UX mais natural
 
-### O que perdemos / pendências
-- Drag implementado manualmente (~30 linhas — ok)
-- Resize ainda não suportado (todas as notas 200x200)
-- Multi-monitor: notas só no display primário. Seguir
-  `screen.getAllDisplays()` na v2.
+### O que perdemos
+- Notas só são visíveis quando o app está aberto (mas com tray + auto-start, isso é trivial)
+- Não vê nota "flutuando sobre o desktop" igual a sticky note físico
 
-### Implicações arquiteturais
-- O `setIgnoreMouseEvents(true, { forward: true })` precisa ser
-  gerenciado dinamicamente baseado em hover. Funciona perfeitamente
-  com Electron 33.
+### Arquivos removidos da abordagem anterior
+- `electron/windows/notesCanvasWindow.ts`
+- `src/views/NotesCanvasView.vue`
+- IPC `notes:setMouseInteractive`
+- Setting `showNotesCanvas`
+
+### Arquivos da abordagem atual
+- `src/views/NotesView.vue` (NEW) — aba com board interno
+- `src/components/StickyNote.vue` — drag agora usa coordenadas
+  relativas ao board (Vue inject)
+- O resto do backend (NotesService, store, IPC CRUD) continua igual
 
 ## Onde está a documentação técnica
 

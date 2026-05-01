@@ -1,17 +1,20 @@
 <script setup lang="ts">
 /**
- * Sticky Note flutuante — usado dentro da NotesCanvasView.
+ * Sticky Note flutuante — renderizada dentro do board da NotesView.
+ *
+ * Coordenadas (`x`, `y`) são relativas ao board (container pai com
+ * position:relative). O drag injeta a ref do board via Vue inject
+ * pra calcular `event.clientX - boardRect.left` corretamente.
  *
  * Comportamento:
- *   - Drag por toda a área (exceto textarea quando focado)
- *   - Rotação aplicada via CSS transform com transition suave
- *   - Durante drag: scale-up sutil + sombra mais forte (efeito "pegando")
- *   - Drop: transition cubic-bezier bouncy = balanço natural ao parar
- *   - Color picker no header (popover com 6 círculos)
+ *   - Drag por toda a área (exceto textarea quando focado e botões)
+ *   - Bouncy CSS transition pra balanço de papel ao soltar
+ *   - Color picker no header (popover com 6 cores)
  *   - Botão X pra deletar
+ *   - Debounce 400ms na edição de texto pra evitar IPC excessivo
  */
 
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed, onBeforeUnmount, inject, type Ref } from 'vue'
 import { X, Palette } from 'lucide-vue-next'
 import type { Note, NoteColor } from '@/types/note'
 import { NOTE_COLORS, COLOR_PALETTES } from '@/types/note'
@@ -23,9 +26,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   update: [patch: { x?: number; y?: number; color?: NoteColor; text?: string }]
   delete: [id: string]
-  /** Notifica o pai pra ele dizer ao Main pra fazer setIgnoreMouseEvents(false). */
-  hover: [hovering: boolean]
 }>()
+
+/** Container pai (NotesView board) — usado pra calcular coordenadas relativas. */
+const boardRef = inject<Ref<HTMLElement | null>>('notesBoard', ref(null))
 
 const isDragging = ref(false)
 const dragOffset = ref({ x: 0, y: 0 })
@@ -42,17 +46,30 @@ const palette = computed(() => {
   return isDarkMode.value ? colors.dark : colors.light
 })
 
+function getRelativeMouse(event: MouseEvent): { x: number; y: number } | null {
+  const board = boardRef.value
+  if (!board) return null
+  const rect = board.getBoundingClientRect()
+  return {
+    x: event.clientX - rect.left + board.scrollLeft,
+    y: event.clientY - rect.top + board.scrollTop,
+  }
+}
+
 function startDrag(event: MouseEvent) {
-  // Não dragueia se clicou em controles
+  // Não dragueia se clicou em controles ou textarea focada
   const target = event.target as HTMLElement
   if (target.closest('.no-drag')) return
   if (target.tagName === 'TEXTAREA' && document.activeElement === target) return
 
+  const mouse = getRelativeMouse(event)
+  if (!mouse) return
+
   event.preventDefault()
   isDragging.value = true
   dragOffset.value = {
-    x: event.clientX - localPos.value.x,
-    y: event.clientY - localPos.value.y,
+    x: mouse.x - localPos.value.x,
+    y: mouse.y - localPos.value.y,
   }
 
   document.addEventListener('mousemove', onDrag)
@@ -61,10 +78,13 @@ function startDrag(event: MouseEvent) {
 
 function onDrag(event: MouseEvent) {
   if (!isDragging.value) return
-  localPos.value = {
-    x: event.clientX - dragOffset.value.x,
-    y: event.clientY - dragOffset.value.y,
-  }
+  const mouse = getRelativeMouse(event)
+  if (!mouse) return
+
+  // Clamp pra não sair do board (mantém pelo menos um pedaço visível)
+  const x = Math.max(-160, mouse.x - dragOffset.value.x)
+  const y = Math.max(0, mouse.y - dragOffset.value.y)
+  localPos.value = { x, y }
 }
 
 function stopDrag() {
@@ -72,7 +92,6 @@ function stopDrag() {
   isDragging.value = false
   document.removeEventListener('mousemove', onDrag)
   document.removeEventListener('mouseup', stopDrag)
-  // Persiste posição final
   emit('update', { x: localPos.value.x, y: localPos.value.y })
 }
 
@@ -85,7 +104,6 @@ let textTimeout: number | null = null
 function onTextInput(event: Event) {
   const target = event.target as HTMLTextAreaElement
   localText.value = target.value
-  // Debounce de 400ms pra evitar IPC excessivo durante digitação
   if (textTimeout !== null) clearTimeout(textTimeout)
   textTimeout = window.setTimeout(() => {
     emit('update', { text: localText.value })
@@ -128,8 +146,6 @@ function colorPreview(color: NoteColor): string {
       '--text': palette.text,
     }"
     @mousedown="startDrag"
-    @mouseenter="emit('hover', true)"
-    @mouseleave="emit('hover', false)"
   >
     <!-- Header com controles -->
     <div class="sticky-note-header">
@@ -143,7 +159,7 @@ function colorPreview(color: NoteColor): string {
         </button>
         <div
           v-if="colorPickerOpen"
-          class="absolute top-full left-0 mt-1 flex gap-1 p-1.5 rounded bg-black/20 backdrop-blur-sm shadow-lg z-10"
+          class="absolute top-full left-0 mt-1 flex gap-1 p-1.5 rounded bg-black/30 backdrop-blur-sm shadow-lg z-10"
         >
           <button
             v-for="color in NOTE_COLORS"
@@ -198,17 +214,15 @@ function colorPreview(color: NoteColor): string {
     box-shadow 0.2s ease-out;
   transform: rotate(var(--rotation, 0deg));
   transform-origin: top center;
-  /* Otimização: GPU layer pra animação suave */
   will-change: transform;
 }
 
 .sticky-note.is-dragging {
-  /* Durante drag: scale-up sutil + sombra mais marcante (efeito "elevado") */
   transform: rotate(calc(var(--rotation, 0deg) + 2deg)) scale(1.04);
   box-shadow:
     0 4px 8px rgba(0, 0, 0, 0.18),
     0 16px 32px rgba(0, 0, 0, 0.22);
-  transition: none; /* sem transition durante drag pra responder na hora */
+  transition: none;
   z-index: 10;
 }
 

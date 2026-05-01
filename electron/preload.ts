@@ -95,8 +95,6 @@ const api: NotifyMeAPI = {
         ipcRenderer.removeListener('notes:changed', handler)
       }
     },
-    setMouseInteractive: (interactive: boolean) =>
-      ipcRenderer.send('notes:setMouseInteractive', interactive),
   },
 
   settings: {
