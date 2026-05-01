@@ -7,7 +7,7 @@
  * Veja docs/01-arquitetura-electron.md e docs/03-ipc.md.
  */
 
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, dialog } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getDatabase, closeDatabase } from './db'
@@ -27,6 +27,45 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   : RENDERER_DIST
 
 let win: BrowserWindow | null = null
+
+/**
+ * Single-instance lock: garante que só uma instância do app roda por vez.
+ * Sem isso, abrir o app duas vezes (ou um restart de hot-reload com a
+ * instância anterior ainda viva) cria duas conexões SQLite no mesmo
+ * arquivo — e a segunda dá "database is locked".
+ */
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) {
+  console.log('[main] another instance is already running, exiting')
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (win) {
+      if (win.isMinimized()) win.restore()
+      win.focus()
+    }
+  })
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      closeDatabase()
+      app.quit()
+      win = null
+    }
+  })
+
+  app.on('before-quit', () => {
+    closeDatabase()
+  })
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow()
+    }
+  })
+
+  app.whenReady().then(initialize)
+}
 
 function createWindow() {
   win = new BrowserWindow({
@@ -51,32 +90,26 @@ function createWindow() {
   }
 }
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    closeDatabase()
-    app.quit()
-    win = null
-  }
-})
+function initialize() {
+  try {
+    // 1. Abre o banco e roda migrations
+    const db = getDatabase()
 
-app.on('before-quit', () => {
-  closeDatabase()
-})
+    // 2. Cria os services e registra os handlers IPC
+    const remindersService = new RemindersService(db)
+    registerRemindersIPC(remindersService)
 
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
+    // 3. Abre a janela
     createWindow()
+  } catch (error) {
+    const err = error as Error
+    console.error('[main] fatal initialization error:', err)
+    dialog.showErrorBox(
+      'NotifyMe — Erro fatal',
+      `Falha ao inicializar:\n\n${err.message}\n\n` +
+        `Caso o erro seja "database is locked", feche todas as instancias ` +
+        `do NotifyMe pelo Gerenciador de Tarefas e rode novamente.`
+    )
+    app.quit()
   }
-})
-
-app.whenReady().then(() => {
-  // 1. Abre o banco e roda migrations
-  const db = getDatabase()
-
-  // 2. Cria os services e registra os handlers IPC
-  const remindersService = new RemindersService(db)
-  registerRemindersIPC(remindersService)
-
-  // 3. Abre a janela
-  createWindow()
-})
+}
