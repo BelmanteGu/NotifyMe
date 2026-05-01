@@ -88,6 +88,43 @@
     user-select: none;
     /* Background com glow laranja sutil no topo (substituido em .bg-app pra ter mais controle) */
     background: hsl(var(--background));
+    /* Border radius da janela toda (frame:false) — visual macOS-like */
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  /* Scrollbar custom: fina, semi-transparente, aparece com mais opacidade no hover.
+     "scroll-overlay" usa overflow: overlay quando o navegador suporta —
+     o scrollbar passa a flutuar sobre o conteúdo em vez de empurrá-lo. */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.18);
+    border-radius: 6px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    transition: background-color 0.2s;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.35);
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  .scroll-overlay {
+    overflow-y: overlay;
+    overflow-y: auto;
+  }
+  @supports (overflow: overlay) {
+    .scroll-overlay {
+      overflow-y: overlay;
+    }
   }
 
   h1, h2, h3, h4, h5, h6 {

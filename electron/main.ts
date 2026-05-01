@@ -2,10 +2,7 @@
  * NotifyMe — Processo Principal (Main Process)
  *
  * Cria janelas, abre o store JSON, registra handlers IPC,
- * dispara o scheduler, mantém o tray icon, lida com quit vs hide.
- *
- * Veja docs/01-arquitetura-electron.md, docs/03-ipc.md,
- * docs/05-agendamento.md, docs/07-tray-e-autostart.md.
+ * dispara o scheduler, mantém o tray icon e a title bar customizada.
  */
 
 import { app, BrowserWindow, dialog, ipcMain, shell, Menu } from 'electron'
@@ -35,11 +32,6 @@ let mainWin: BrowserWindow | null = null
 let scheduler: ReminderScheduler | null = null
 const alertWindows = new Map<string, BrowserWindow>()
 
-/**
- * Flag pra distinguir "fechar janela" (esconde) de "sair de verdade"
- * (encerra o processo). O X da janela seta hide; o menu "Sair" da
- * tray seta isQuitting=true antes de chamar app.quit().
- */
 let isQuitting = false
 
 const PRELOAD_PATH = path.join(__dirname, 'preload.mjs')
@@ -59,9 +51,6 @@ if (!gotLock) {
     }
   })
 
-  // No NotifyMe, fechar todas as janelas NÃO encerra o app — ele
-  // continua na tray pra disparar lembretes. Só sai de verdade quando
-  // isQuitting=true (definido pelo menu "Sair" da tray).
   app.on('window-all-closed', () => {
     if (isQuitting && process.platform !== 'darwin') {
       app.quit()
@@ -88,11 +77,16 @@ function createMainWindow() {
   mainWin = new BrowserWindow({
     width: 1100,
     height: 720,
-    minWidth: 800,
-    minHeight: 600,
+    minWidth: 880,
+    minHeight: 560,
     title: 'NotifyMe',
     backgroundColor: '#0D0D0E',
     show: true,
+    // Frame customizado: tira a barra de título nativa do Windows.
+    // O Renderer desenha a TitleBar com botões custom (TitleBar.vue).
+    frame: false,
+    titleBarStyle: 'hidden',
+    autoHideMenuBar: true,
     webPreferences: {
       preload: PRELOAD_PATH,
       contextIsolation: true,
@@ -100,14 +94,20 @@ function createMainWindow() {
     },
   })
 
-  // Hijack do close: em vez de fechar, esconde. App continua rodando
-  // na tray. Pra sair de verdade, usar menu "Sair" da tray (que seta
-  // isQuitting=true antes).
   mainWin.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault()
       mainWin?.hide()
     }
+  })
+
+  // Notifica o Renderer quando o estado de maximizado muda
+  // (pra a title bar atualizar o ícone do botão maximize/restore).
+  mainWin.on('maximize', () => {
+    mainWin?.webContents.send('window:maximizedChanged', true)
+  })
+  mainWin.on('unmaximize', () => {
+    mainWin?.webContents.send('window:maximizedChanged', false)
   })
 
   if (VITE_DEV_SERVER_URL) {
@@ -128,8 +128,6 @@ function notifyRendererChanged() {
 
 function initialize() {
   try {
-    // Remove menu bar padrão do Electron (File / Edit / View / Window / Help).
-    // O NotifyMe não usa esses menus — o controle todo é via tray + UI da janela.
     Menu.setApplicationMenu(null)
 
     const store = getStore()
@@ -151,9 +149,7 @@ function initialize() {
 
     registerRemindersIPC(remindersService, scheduler, notifyRendererChanged)
 
-    // Handler genérico pra abrir URLs externas no navegador padrão.
-    // Validação: só http/https — bloqueia file://, javascript:, etc
-    // (defesa contra XSS escapando do Renderer).
+    // System: openExternal pra abrir links no navegador padrão
     ipcMain.handle('system:openExternal', (_event, url: string) => {
       if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
         console.warn('[ipc] openExternal recusou URL invalida:', url)
@@ -162,8 +158,21 @@ function initialize() {
       shell.openExternal(url)
     })
 
-    createMainWindow()
+    // Window controls — usados pela TitleBar customizada
+    ipcMain.on('window:minimize', () => {
+      mainWin?.minimize()
+    })
+    ipcMain.on('window:toggleMaximize', () => {
+      if (!mainWin) return
+      if (mainWin.isMaximized()) mainWin.unmaximize()
+      else mainWin.maximize()
+    })
+    ipcMain.on('window:close', () => {
+      mainWin?.close()
+    })
+    ipcMain.handle('window:isMaximized', () => mainWin?.isMaximized() ?? false)
 
+    createMainWindow()
     createTray({
       getMainWindow: () => mainWin,
       createMainWindow,

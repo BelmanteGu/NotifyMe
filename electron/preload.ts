@@ -46,6 +46,20 @@ const api: NotifyMeAPI = {
   system: {
     openExternal: (url: string): Promise<void> =>
       ipcRenderer.invoke('system:openExternal', url),
+
+    window: {
+      minimize: () => ipcRenderer.send('window:minimize'),
+      toggleMaximize: () => ipcRenderer.send('window:toggleMaximize'),
+      close: () => ipcRenderer.send('window:close'),
+      isMaximized: () => ipcRenderer.invoke('window:isMaximized'),
+      onMaximizedChanged: (callback) => {
+        const handler = (_event: unknown, value: boolean) => callback(value)
+        ipcRenderer.on('window:maximizedChanged', handler)
+        return () => {
+          ipcRenderer.removeListener('window:maximizedChanged', handler)
+        }
+      },
+    },
   },
 }
 

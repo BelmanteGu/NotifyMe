@@ -4,6 +4,7 @@ import { Bell, CheckCircle2, Clock, X, Repeat } from 'lucide-vue-next'
 import type { Reminder } from '@/types/reminder'
 import { RECURRENCE_LABELS } from '@/types/reminder'
 import { formatRelative } from '@/utils/formatDate'
+import { playAlertSound } from '@/utils/sound'
 
 const props = defineProps<{
   reminderId: string
@@ -24,6 +25,14 @@ onMounted(async () => {
 
   reminder.value = await window.notifyme.reminders.getById(props.reminderId)
   loading.value = false
+
+  // Toca o som de alerta após o reminder carregar (evita som tocando
+  // numa janela vazia se o IPC demorar). Se o autoplay for bloqueado
+  // por política do navegador, o som falha silenciosamente — a janela
+  // ainda é visível e o usuário ainda recebe o alerta.
+  if (reminder.value) {
+    playAlertSound()
+  }
 })
 
 async function handleComplete() {

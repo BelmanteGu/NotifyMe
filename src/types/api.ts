@@ -36,5 +36,14 @@ export interface NotifyMeAPI {
   system: {
     /** Abre uma URL HTTP/HTTPS no navegador padrão do usuário (não no Electron). */
     openExternal: (url: string) => Promise<void>
+
+    /** Controles da janela main (usados pela title bar customizada). */
+    window: {
+      minimize: () => void
+      toggleMaximize: () => void
+      close: () => void
+      isMaximized: () => Promise<boolean>
+      onMaximizedChanged: (callback: (value: boolean) => void) => () => void
+    }
   }
 }
