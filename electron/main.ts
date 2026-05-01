@@ -8,7 +8,7 @@
  * docs/05-agendamento.md, docs/07-tray-e-autostart.md.
  */
 
-import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, shell, Menu } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getStore } from './store'
@@ -128,6 +128,10 @@ function notifyRendererChanged() {
 
 function initialize() {
   try {
+    // Remove menu bar padrão do Electron (File / Edit / View / Window / Help).
+    // O NotifyMe não usa esses menus — o controle todo é via tray + UI da janela.
+    Menu.setApplicationMenu(null)
+
     const store = getStore()
     const remindersService = new RemindersService(store)
 

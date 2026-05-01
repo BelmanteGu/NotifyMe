@@ -1,8 +1,10 @@
 /**
- * Helpers de formatação de data, em pt-BR.
+ * Helpers de formatação e parsing de data, em pt-BR.
  *
- * Usamos `Intl` nativo do navegador — sem dependência extra (date-fns/dayjs).
- * Pra um app simples como o NotifyMe é mais que suficiente.
+ * Formatos manipulados:
+ *   - ISO 8601: "2026-05-01T16:05:00.000Z" (formato canônico no store)
+ *   - BR Date: "DD/MM/AAAA" (input do usuário)
+ *   - Time:    "HH:MM" (input do usuário)
  */
 
 const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
@@ -33,27 +35,72 @@ export function formatRelative(iso: string): string {
   return `${dateFormatter.format(date)}, ${time}`
 }
 
-/**
- * Combina um input de data (YYYY-MM-DD) e hora (HH:mm) num ISO local.
- * Útil pro modal de criar lembrete.
- */
-export function combineDateTime(date: string, time: string): string {
-  return new Date(`${date}T${time}:00`).toISOString()
-}
-
-/** Pega o componente "YYYY-MM-DD" de um ISO. */
-export function isoToDateInput(iso: string): string {
+/** ISO → "DD/MM/AAAA" */
+export function isoToBRDate(iso: string): string {
   const d = new Date(iso)
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = d.getFullYear()
+  return `${day}/${month}/${year}`
 }
 
-/** Pega o componente "HH:mm" de um ISO. */
+/** ISO → "HH:MM" */
 export function isoToTimeInput(iso: string): string {
   const d = new Date(iso)
   const hours = String(d.getHours()).padStart(2, '0')
   const minutes = String(d.getMinutes()).padStart(2, '0')
   return `${hours}:${minutes}`
+}
+
+/**
+ * Aplica máscara DD/MM/AAAA enquanto o usuário digita.
+ * Retorna a string com '/' nas posições corretas.
+ */
+export function maskBRDate(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
+}
+
+/** Aplica máscara HH:MM. */
+export function maskTime(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 4)
+  if (digits.length <= 2) return digits
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`
+}
+
+/**
+ * Combina "DD/MM/AAAA" + "HH:MM" em ISO 8601.
+ * Retorna `null` se o input estiver inválido (não tem 10 chars na data,
+ * mês > 12, etc).
+ */
+export function combineBRDateTime(brDate: string, time: string): string | null {
+  const dateMatch = brDate.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  const timeMatch = time.match(/^(\d{2}):(\d{2})$/)
+  if (!dateMatch || !timeMatch) return null
+
+  const [, dd, mm, yyyy] = dateMatch
+  const [, hh, min] = timeMatch
+
+  const date = new Date(
+    Number(yyyy),
+    Number(mm) - 1,
+    Number(dd),
+    Number(hh),
+    Number(min),
+    0
+  )
+
+  if (Number.isNaN(date.getTime())) return null
+  // Sanity: garante que os componentes não foram "absorvidos" (ex: 31/02 vira 03/03)
+  if (
+    date.getFullYear() !== Number(yyyy) ||
+    date.getMonth() !== Number(mm) - 1 ||
+    date.getDate() !== Number(dd)
+  ) {
+    return null
+  }
+
+  return date.toISOString()
 }
