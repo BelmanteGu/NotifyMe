@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Play, Pause, RotateCcw } from 'lucide-vue-next'
 import { useTimer } from '@/composables/useTimer'
 
@@ -16,6 +16,43 @@ const {
 } = useTimer()
 
 const presets = [5, 10, 15, 25, 50, 90]
+
+const customInput = ref<string>('')
+
+/** True se o totalSeconds atual NÃO bate com nenhum preset (= valor custom). */
+const isCustomActive = computed(() => {
+  const mins = totalSeconds.value / 60
+  return !presets.includes(mins)
+})
+
+/**
+ * Sincroniza customInput com o totalSeconds quando ele muda por outra
+ * forma (preset clicado, reset, etc) — mas só preenche o input se for
+ * um valor custom, pra não atrapalhar.
+ */
+watch(
+  totalSeconds,
+  (value) => {
+    const mins = value / 60
+    if (!presets.includes(mins)) {
+      customInput.value = String(mins)
+    } else {
+      customInput.value = ''
+    }
+  },
+  { immediate: true }
+)
+
+function handleCustomInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  const raw = target.value.replace(/\D/g, '').slice(0, 3) // max 999 min
+  customInput.value = raw
+
+  const value = parseInt(raw, 10)
+  if (Number.isFinite(value) && value > 0 && value <= 999) {
+    setMinutes(value)
+  }
+}
 
 const dashOffset = computed(() => {
   const circumference = 2 * Math.PI * 45
@@ -66,8 +103,8 @@ const circumference = 2 * Math.PI * 45
       </div>
     </div>
 
-    <!-- Presets -->
-    <div class="flex flex-wrap gap-2 justify-center mb-8">
+    <!-- Presets + input personalizado -->
+    <div class="flex flex-wrap gap-2 justify-center items-center mb-8">
       <button
         v-for="m in presets"
         :key="m"
@@ -81,6 +118,32 @@ const circumference = 2 * Math.PI * 45
       >
         {{ m }} min
       </button>
+
+      <!-- Input customizado, estilo pill -->
+      <div
+        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border bg-card transition"
+        :class="
+          isCustomActive
+            ? 'border-primary bg-primary/5'
+            : 'border-border'
+        "
+      >
+        <input
+          type="text"
+          inputmode="numeric"
+          :value="customInput"
+          @input="handleCustomInput"
+          placeholder="—"
+          class="w-10 bg-transparent text-xs text-center font-medium focus:outline-none placeholder:text-muted-foreground/50"
+          :class="isCustomActive ? 'text-primary' : 'text-foreground'"
+        />
+        <span
+          class="text-xs"
+          :class="isCustomActive ? 'text-primary font-medium' : 'text-muted-foreground'"
+        >
+          min
+        </span>
+      </div>
     </div>
 
     <!-- Botões de controle -->

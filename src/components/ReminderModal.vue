@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, computed } from 'vue'
-import { X, ChevronDown, AlertCircle } from 'lucide-vue-next'
+import { X, AlertCircle } from 'lucide-vue-next'
+import Select from '@/components/ui/Select.vue'
 import type { ReminderInput, Recurrence } from '@/types/reminder'
 import {
   isoToBRDate,
@@ -197,26 +198,20 @@ function submit() {
             </div>
           </div>
 
-          <!-- Repetir (select estilo shadcn) -->
+          <!-- Repetir (Select customizado) -->
           <div class="space-y-2">
-            <label
-              class="text-sm font-medium leading-none text-foreground"
-              for="recurrence"
-            >
+            <label class="text-sm font-medium leading-none text-foreground">
               Repetir
             </label>
-            <div class="relative">
-              <select
-                id="recurrence"
-                v-model="recurrence"
-                class="flex h-10 w-full appearance-none rounded-sm border border-input bg-card px-3 pr-10 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-primary transition-colors cursor-pointer"
-              >
-                <option value="once">Uma vez</option>
-                <option value="daily">Todo dia</option>
-                <option value="weekly">Toda semana</option>
-              </select>
-              <ChevronDown class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            </div>
+            <Select
+              :model-value="recurrence"
+              @update:model-value="(v) => (recurrence = v as Recurrence)"
+              :options="[
+                { value: 'once', label: 'Uma vez' },
+                { value: 'daily', label: 'Todo dia' },
+                { value: 'weekly', label: 'Toda semana' },
+              ]"
+            />
           </div>
 
           <!-- Erro de validação -->
