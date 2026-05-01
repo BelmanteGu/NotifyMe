@@ -213,7 +213,50 @@ ou exporta CSV.
 
 ---
 
-## 9. Comandos úteis pra debug
+## 9. Pegadinha: ESM importando CJS
+
+O `package.json` tem `"type": "module"` e o `dist-electron/main.js` é tratado
+como ES Module. Mas o `node-sqlite3-wasm` é distribuído como **CommonJS**.
+
+Importar com sintaxe ESM normal **não funciona**:
+
+```ts
+// ❌ Erro em runtime: Named export 'Database' not found.
+import { Database } from 'node-sqlite3-wasm'
+```
+
+A causa: Node não consegue detectar exports nomeados de pacotes CJS quando
+importados via ESM (a menos que o pacote tenha um wrapper ESM, o que o
+node-sqlite3-wasm não tem).
+
+A solução usada no NotifyMe é o `createRequire` — o jeito idiomático em
+Node 20+ de carregar CJS de dentro de ESM:
+
+```ts
+import { createRequire } from 'node:module'
+import type { Database } from 'node-sqlite3-wasm'
+
+const require = createRequire(import.meta.url)
+const sqliteWasm = require('node-sqlite3-wasm') as typeof import('node-sqlite3-wasm')
+
+// Uso: new sqliteWasm.Database(path)
+// Tipo: Database (importado como type, apagado em runtime)
+```
+
+Vantagens dessa abordagem:
+- Não precisa de `esModuleInterop` ou `allowSyntheticDefaultImports`
+  no tsconfig
+- Funciona com qualquer pacote CJS (better-sqlite3, electron-store, etc)
+- Os tipos continuam funcionando perfeitamente via `import type`
+
+Outra alternativa também usada também precisaria do `vite.config.ts`
+marcando `node-sqlite3-wasm` como `external`, pra ele ser carregado de
+`node_modules` em runtime em vez de bundleado. Sem isso, o bundle do
+main.js tenta usar `__dirname` (que não existe em ESM) e dá outro erro.
+
+---
+
+## 10. Comandos úteis pra debug
 
 Pra inspecionar o banco em desenvolvimento:
 
