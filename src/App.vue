@@ -1,14 +1,39 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Bell, Plus } from 'lucide-vue-next'
+import { ref, computed } from 'vue'
+import { Bell, Plus, Trash2 } from 'lucide-vue-next'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import ReminderCard from '@/components/ReminderCard.vue'
 import ReminderModal from '@/components/ReminderModal.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { useReminders } from '@/composables/useReminders'
 
-const { reminders, loading, error, create, remove, markCompleted } = useReminders()
+const {
+  reminders,
+  completed,
+  loading,
+  error,
+  create,
+  remove,
+  markCompleted,
+  clearCompleted,
+} = useReminders()
+
 const modalOpen = ref(false)
+type Tab = 'pending' | 'completed'
+const currentTab = ref<Tab>('pending')
+
+const visibleList = computed(() =>
+  currentTab.value === 'pending' ? reminders.value : completed.value
+)
+
+async function handleClearCompleted() {
+  if (completed.value.length === 0) return
+  const ok = window.confirm(
+    `Apagar definitivamente ${completed.value.length} lembrete(s) concluído(s)? Não dá pra desfazer.`
+  )
+  if (!ok) return
+  await clearCompleted()
+}
 </script>
 
 <template>
@@ -44,14 +69,75 @@ const modalOpen = ref(false)
     </header>
 
     <main class="flex-1 max-w-5xl mx-auto w-full px-6 py-8">
-      <div class="mb-6 flex items-center justify-between">
-        <h2 class="text-2xl font-bold font-heading">Meus lembretes</h2>
-        <span v-if="!loading" class="text-sm text-muted-foreground">
-          {{ reminders.length }}
-          {{ reminders.length === 1 ? 'pendente' : 'pendentes' }}
-        </span>
+      <h2 class="text-2xl font-bold font-heading mb-4">Meus lembretes</h2>
+
+      <!-- Tabs -->
+      <div class="flex items-center justify-between mb-6 border-b border-border">
+        <div class="flex">
+          <button
+            @click="currentTab = 'pending'"
+            class="px-4 py-3 text-sm font-medium relative transition flex items-center gap-2"
+            :class="
+              currentTab === 'pending'
+                ? 'text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            "
+          >
+            Pendentes
+            <span
+              class="px-1.5 py-0.5 rounded-sm text-xs"
+              :class="
+                currentTab === 'pending'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
+              "
+            >
+              {{ reminders.length }}
+            </span>
+            <span
+              v-if="currentTab === 'pending'"
+              class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t"
+            ></span>
+          </button>
+
+          <button
+            @click="currentTab = 'completed'"
+            class="px-4 py-3 text-sm font-medium relative transition flex items-center gap-2"
+            :class="
+              currentTab === 'completed'
+                ? 'text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            "
+          >
+            Concluídos
+            <span
+              class="px-1.5 py-0.5 rounded-sm text-xs"
+              :class="
+                currentTab === 'completed'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
+              "
+            >
+              {{ completed.length }}
+            </span>
+            <span
+              v-if="currentTab === 'completed'"
+              class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t"
+            ></span>
+          </button>
+        </div>
+
+        <button
+          v-if="currentTab === 'completed' && completed.length > 0"
+          @click="handleClearCompleted"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
+        >
+          <Trash2 class="w-3.5 h-3.5" />
+          Limpar todos
+        </button>
       </div>
 
+      <!-- Estados de carregamento e erro -->
       <div
         v-if="error"
         class="mb-4 p-4 rounded-md border border-destructive bg-destructive/10 text-destructive text-sm"
@@ -63,14 +149,17 @@ const modalOpen = ref(false)
         Carregando…
       </div>
 
+      <!-- Empty states por tab -->
       <EmptyState
-        v-else-if="reminders.length === 0"
+        v-else-if="visibleList.length === 0"
+        :variant="currentTab"
         @create="modalOpen = true"
       />
 
+      <!-- Lista -->
       <div v-else class="space-y-3">
         <ReminderCard
-          v-for="reminder in reminders"
+          v-for="reminder in visibleList"
           :key="reminder.id"
           :reminder="reminder"
           @mark-completed="(id) => markCompleted(id)"

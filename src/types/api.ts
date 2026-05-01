@@ -14,6 +14,9 @@ export interface NotifyMeAPI {
     delete: (id: string) => Promise<boolean>
     markCompleted: (id: string) => Promise<Reminder | null>
 
+    /** Apaga todos os lembretes com status 'completed'. Retorna quantos foram apagados. */
+    clearCompleted: () => Promise<number>
+
     /**
      * Subscreve a eventos de mudança vindos do Main.
      * Usado quando o scheduler dispara um recorrente e atualiza o

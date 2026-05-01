@@ -28,6 +28,19 @@ const pendingReminders = computed(() =>
   sortedReminders.value.filter((r) => r.status === 'pending')
 )
 
+/**
+ * Concluídos ordenados pelo mais recente primeiro (triggerAt desc).
+ * Útil pra ver "o que terminei agora" no topo.
+ */
+const completedReminders = computed(() =>
+  reminders.value
+    .filter((r) => r.status === 'completed')
+    .sort(
+      (a, b) =>
+        new Date(b.triggerAt).getTime() - new Date(a.triggerAt).getTime()
+    )
+)
+
 async function refresh() {
   loading.value = true
   try {
@@ -64,6 +77,14 @@ async function markCompleted(id: string) {
   return updated
 }
 
+async function clearCompleted() {
+  const count = await window.notifyme.reminders.clearCompleted()
+  if (count > 0) {
+    reminders.value = reminders.value.filter((r) => r.status !== 'completed')
+  }
+  return count
+}
+
 export function useReminders() {
   if (!initialized) {
     initialized = true
@@ -76,6 +97,7 @@ export function useReminders() {
 
   return {
     reminders: pendingReminders,
+    completed: completedReminders,
     allReminders: sortedReminders,
     loading,
     error,
@@ -83,5 +105,6 @@ export function useReminders() {
     create,
     remove,
     markCompleted,
+    clearCompleted,
   }
 }

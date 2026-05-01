@@ -40,4 +40,6 @@ export function registerRemindersIPC(
     if (reminder) scheduler.cancel(id)
     return reminder
   })
+
+  ipcMain.handle('reminders:clearCompleted', () => service.clearCompleted())
 }

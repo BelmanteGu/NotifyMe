@@ -26,6 +26,9 @@ const api: NotifyMeAPI = {
     markCompleted: (id: string): Promise<Reminder | null> =>
       ipcRenderer.invoke('reminders:markCompleted', id),
 
+    clearCompleted: (): Promise<number> =>
+      ipcRenderer.invoke('reminders:clearCompleted'),
+
     onChanged: (callback: () => void): (() => void) => {
       const handler = () => callback()
       ipcRenderer.on('reminders:changed', handler)

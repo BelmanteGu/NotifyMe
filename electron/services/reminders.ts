@@ -77,4 +77,14 @@ export class RemindersService {
     this.store.set('reminders', next)
     return updated
   }
+
+  clearCompleted(): number {
+    const all = this.store.get('reminders', [])
+    const remaining = all.filter((r) => r.status !== 'completed')
+    const removed = all.length - remaining.length
+    if (removed > 0) {
+      this.store.set('reminders', remaining)
+    }
+    return removed
+  }
 }
