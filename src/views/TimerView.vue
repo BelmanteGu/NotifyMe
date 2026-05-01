@@ -2,7 +2,6 @@
 import { computed, ref, watch } from 'vue'
 import { Play, Pause, RotateCcw } from 'lucide-vue-next'
 import { useTimer } from '@/composables/useTimer'
-import { formatMinSec, parseMinSec } from '@/utils/formatDate'
 
 const {
   totalSeconds,
@@ -19,56 +18,85 @@ const {
 
 const presets = [5, 10, 15, 25, 50, 90]
 
-/** Dígitos puros do input customizado (sem `:`). Ex: "130" representa 1:30. */
-const customDigits = ref<string>('')
+// ─── Input personalizado: 2 campos MM e SS ────────────────────
+const customMinutes = ref('')
+const customSeconds = ref('')
+const minutesInput = ref<HTMLInputElement | null>(null)
+const secondsInput = ref<HTMLInputElement | null>(null)
 
-/** Display formatado pro input mostrar `MM:SS`. */
-const customDisplay = computed(() => formatMinSec(customDigits.value))
-
-/** True se o totalSeconds atual NÃO bate com nenhum preset (= valor custom). */
 const isCustomActive = computed(() => {
-  const mins = totalSeconds.value / 60
-  // Bate exato com um preset (sem segundos extras)?
-  return !(presets.includes(mins) && totalSeconds.value === mins * 60)
+  const totalMin = totalSeconds.value / 60
+  // Bate exato com preset (sem segundos extras)?
+  return !(presets.includes(totalMin) && totalSeconds.value === totalMin * 60)
 })
 
 /**
- * Sincroniza customDigits quando o totalSeconds muda por outra forma
- * (clicar preset, reset, etc). Se o valor é custom, preenche o input;
- * se é preset, limpa.
+ * Sincroniza os inputs quando totalSeconds muda por outra forma
+ * (preset clicado, reset). Limpa campos se for um preset; preenche
+ * se for custom.
  */
 watch(
   totalSeconds,
   (value) => {
-    const mins = value / 60
-    if (presets.includes(mins) && value === mins * 60) {
-      customDigits.value = ''
+    const m = Math.floor(value / 60)
+    const s = value % 60
+    if (presets.includes(m) && s === 0) {
+      customMinutes.value = ''
+      customSeconds.value = ''
     } else {
-      // Converte segundos → "MMSS" sem `:` pra inserir nos digits
-      const m = Math.floor(value / 60)
-      const s = value % 60
-      const mStr = String(m)
-      const sStr = String(s).padStart(2, '0')
-      customDigits.value = mStr === '0' ? sStr : mStr + sStr
+      customMinutes.value = m > 0 ? String(m) : ''
+      customSeconds.value = s > 0 ? String(s).padStart(2, '0') : ''
     }
   },
   { immediate: true }
 )
 
-function handleCustomInput(event: Event) {
-  const target = event.target as HTMLInputElement
-  // Pega só dígitos do input, max 4
-  const digits = target.value.replace(/\D/g, '').slice(0, 4)
-  customDigits.value = digits
-
-  if (digits.length === 0) return
-
-  const total = parseMinSec(formatMinSec(digits))
-  if (total !== null && total > 0) {
+function syncToTimer() {
+  const m = parseInt(customMinutes.value) || 0
+  const s = parseInt(customSeconds.value) || 0
+  const total = m * 60 + s
+  if (total > 0) {
     setSeconds(total)
   }
 }
 
+function handleMinutesInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  const v = target.value.replace(/\D/g, '').slice(0, 2)
+  customMinutes.value = v
+  // Auto-foca no campo de segundos quando completa 2 dígitos
+  if (v.length === 2) {
+    secondsInput.value?.focus()
+    secondsInput.value?.select()
+  }
+  syncToTimer()
+}
+
+function handleSecondsInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  let v = target.value.replace(/\D/g, '').slice(0, 2)
+  // Cap silencioso em 59 (segundos válidos)
+  const num = parseInt(v) || 0
+  if (num > 59) v = '59'
+  customSeconds.value = v
+  syncToTimer()
+}
+
+function handleSecondsKeydown(event: KeyboardEvent) {
+  // Backspace em campo vazio volta foco pro minutos
+  if (event.key === 'Backspace' && customSeconds.value === '') {
+    minutesInput.value?.focus()
+    minutesInput.value?.select()
+  }
+}
+
+function selectOnFocus(event: FocusEvent) {
+  const target = event.target as HTMLInputElement
+  // Aguarda próximo tick — Safari/Edge às vezes anula select() imediato
+  requestAnimationFrame(() => target.select())
+}
+
+// ─── Display circular ──────────────────────────────────────────
 const totalLabel = computed(() => {
   const total = totalSeconds.value
   const m = Math.floor(total / 60)
@@ -128,8 +156,8 @@ const circumference = 2 * Math.PI * 45
         </div>
       </div>
 
-      <!-- Presets + input personalizado -->
-      <div class="flex flex-wrap gap-2 justify-center items-center mb-8">
+      <!-- Presets -->
+      <div class="flex flex-wrap gap-2 justify-center mb-3">
         <button
           v-for="m in presets"
           :key="m"
@@ -143,25 +171,44 @@ const circumference = 2 * Math.PI * 45
         >
           {{ m }} min
         </button>
+      </div>
 
-        <!-- Input customizado MM:SS -->
+      <!-- Input personalizado (MM:SS com 2 campos separados) -->
+      <div class="flex justify-center mb-8">
         <div
-          class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border bg-card transition"
-          :class="
-            isCustomActive
-              ? 'border-primary bg-primary/5'
-              : 'border-border'
-          "
+          class="custom-time-input"
+          :class="{ active: isCustomActive }"
         >
+          <span class="text-xs text-muted-foreground font-medium">Outro:</span>
           <input
+            ref="minutesInput"
+            :value="customMinutes"
+            @input="handleMinutesInput"
+            @focus="selectOnFocus"
             type="text"
             inputmode="numeric"
-            :value="customDisplay"
-            @input="handleCustomInput"
-            placeholder="MM:SS"
-            class="w-14 bg-transparent text-xs text-center font-mono font-medium focus:outline-none placeholder:text-muted-foreground/50"
-            :class="isCustomActive ? 'text-primary' : 'text-foreground'"
+            placeholder="00"
+            maxlength="2"
+            aria-label="Minutos"
+            class="time-input"
           />
+          <span class="time-separator">:</span>
+          <input
+            ref="secondsInput"
+            :value="customSeconds"
+            @input="handleSecondsInput"
+            @keydown="handleSecondsKeydown"
+            @focus="selectOnFocus"
+            type="text"
+            inputmode="numeric"
+            placeholder="00"
+            maxlength="2"
+            aria-label="Segundos"
+            class="time-input"
+          />
+          <span class="text-[10px] text-muted-foreground/70 font-medium ml-0.5 uppercase tracking-wider">
+            min:seg
+          </span>
         </div>
       </div>
 
@@ -195,3 +242,68 @@ const circumference = 2 * Math.PI * 45
     </div>
   </div>
 </template>
+
+<style scoped>
+.custom-time-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  transition: all 0.15s;
+}
+
+.custom-time-input.active {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.05);
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.08);
+}
+
+.time-input {
+  width: 22px;
+  background: transparent;
+  border: none;
+  outline: none;
+  text-align: center;
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  padding: 0;
+  caret-color: hsl(var(--primary));
+}
+
+.time-input::placeholder {
+  color: hsl(var(--muted-foreground) / 0.4);
+  font-weight: 400;
+}
+
+.time-input::selection {
+  background: hsl(var(--primary) / 0.25);
+}
+
+/* Esconde os steppers nativos do type=number quando aplicável */
+.time-input::-webkit-outer-spin-button,
+.time-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.custom-time-input.active .time-input {
+  color: hsl(var(--primary));
+}
+
+.time-separator {
+  color: hsl(var(--muted-foreground));
+  font-weight: 600;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  user-select: none;
+}
+
+.custom-time-input.active .time-separator {
+  color: hsl(var(--primary));
+}
+</style>
