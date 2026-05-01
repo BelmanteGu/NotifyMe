@@ -1,7 +1,7 @@
 /**
  * NotifyMe — Processo Principal (Main Process)
  *
- * Cria janelas, abre o banco SQLite, registra handlers IPC.
+ * Cria janelas, abre o store JSON, registra handlers IPC.
  * Roda no ambiente Node.js do Electron.
  *
  * Veja docs/01-arquitetura-electron.md e docs/03-ipc.md.
@@ -10,7 +10,7 @@
 import { app, BrowserWindow, dialog } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { getDatabase, closeDatabase } from './db'
+import { getStore } from './store'
 import { RemindersService } from './services/reminders'
 import { registerRemindersIPC } from './ipc/reminders'
 
@@ -29,10 +29,8 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 let win: BrowserWindow | null = null
 
 /**
- * Single-instance lock: garante que só uma instância do app roda por vez.
- * Sem isso, abrir o app duas vezes (ou um restart de hot-reload com a
- * instância anterior ainda viva) cria duas conexões SQLite no mesmo
- * arquivo — e a segunda dá "database is locked".
+ * Single-instance lock: só uma instância do app por vez.
+ * Tentativas de abrir uma segunda janela trazem foco pra primeira.
  */
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
@@ -48,14 +46,9 @@ if (!gotLock) {
 
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
-      closeDatabase()
       app.quit()
       win = null
     }
-  })
-
-  app.on('before-quit', () => {
-    closeDatabase()
   })
 
   app.on('activate', () => {
@@ -92,24 +85,17 @@ function createWindow() {
 
 function initialize() {
   try {
-    // 1. Abre o banco e roda migrations
-    const db = getDatabase()
-
-    // 2. Cria os services e registra os handlers IPC
-    const remindersService = new RemindersService(db)
+    const store = getStore()
+    const remindersService = new RemindersService(store)
     registerRemindersIPC(remindersService)
-
-    // 3. Abre a janela
     createWindow()
   } catch (error) {
     const err = error as Error
     console.error('[main] fatal initialization error:', err)
     dialog.showErrorBox(
       'NotifyMe — Erro fatal',
-      `Falha ao inicializar:\n\n${err.message}\n\n` +
-        `Caso o erro seja "database is locked", feche todas as instancias ` +
-        `do NotifyMe pelo Gerenciador de Tarefas e rode novamente.`
+      `Falha ao inicializar:\n\n${err.message}`
     )
-    app.quit()
+    app.exit(1)
   }
 }

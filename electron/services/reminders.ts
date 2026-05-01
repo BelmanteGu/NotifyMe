@@ -1,60 +1,36 @@
 /**
  * RemindersService — toda a lógica de CRUD do domínio "lembrete".
  *
- * Este service NÃO conhece IPC. Recebe um `Database` e expõe métodos
- * síncronos. O arquivo electron/ipc/reminders.ts é quem envelopa esses
- * métodos como handlers IPC chamados pelo Renderer.
+ * Lê e escreve em um arquivo JSON via electron-store. Cada operação:
+ *   1. Lê o array atual de `store.get('reminders')`
+ *   2. Faz a transformação (push, filter, map)
+ *   3. Escreve de volta com `store.set('reminders', ...)`
  *
- * Separação:
- *   Renderer → IPC handler → Service → SQLite
+ * O electron-store cuida da escrita atômica (tempfile + rename),
+ * então não tem corrida e não tem lock.
+ *
+ * Pra centenas de lembretes isso é instantâneo.
  */
 
-import type { Database } from 'node-sqlite3-wasm'
+import type Store from 'electron-store'
 import { randomUUID } from 'node:crypto'
-import type {
-  Reminder,
-  ReminderInput,
-  ReminderStatus,
-  Recurrence,
-} from '../../src/types/reminder'
+import type { Reminder, ReminderInput } from '../../src/types/reminder'
 
-interface RawRow {
-  id: string
-  title: string
-  description: string | null
-  trigger_at: string
-  recurrence: string
-  status: string
-  created_at: string
-}
-
-function mapRow(row: RawRow): Reminder {
-  return {
-    id: row.id,
-    title: row.title,
-    description: row.description ?? undefined,
-    triggerAt: row.trigger_at,
-    recurrence: row.recurrence as Recurrence,
-    status: row.status as ReminderStatus,
-    createdAt: row.created_at,
-  }
+interface StoreSchema {
+  reminders: Reminder[]
+  schemaVersion: number
 }
 
 export class RemindersService {
-  constructor(private db: Database) {}
+  constructor(private store: Store<StoreSchema>) {}
 
   list(): Reminder[] {
-    const rows = this.db
-      .prepare('SELECT * FROM reminders ORDER BY trigger_at ASC')
-      .all() as unknown as RawRow[]
-    return rows.map(mapRow)
+    return this.store.get('reminders', []).slice()
   }
 
   findById(id: string): Reminder | null {
-    const row = this.db
-      .prepare('SELECT * FROM reminders WHERE id = ?')
-      .get([id]) as unknown as RawRow | undefined
-    return row ? mapRow(row) : null
+    const all = this.store.get('reminders', [])
+    return all.find((r) => r.id === id) ?? null
   }
 
   create(input: ReminderInput): Reminder {
@@ -65,34 +41,28 @@ export class RemindersService {
       createdAt: new Date().toISOString(),
     }
 
-    this.db
-      .prepare(
-        `INSERT INTO reminders
-         (id, title, description, trigger_at, recurrence, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run([
-        reminder.id,
-        reminder.title,
-        reminder.description ?? null,
-        reminder.triggerAt,
-        reminder.recurrence,
-        reminder.status,
-        reminder.createdAt,
-      ])
-
+    const all = this.store.get('reminders', [])
+    this.store.set('reminders', [...all, reminder])
     return reminder
   }
 
   delete(id: string): boolean {
-    const result = this.db.prepare('DELETE FROM reminders WHERE id = ?').run([id])
-    return (result.changes ?? 0) > 0
+    const all = this.store.get('reminders', [])
+    const filtered = all.filter((r) => r.id !== id)
+    if (filtered.length === all.length) return false
+    this.store.set('reminders', filtered)
+    return true
   }
 
   markCompleted(id: string): Reminder | null {
-    this.db
-      .prepare("UPDATE reminders SET status = 'completed' WHERE id = ?")
-      .run([id])
-    return this.findById(id)
+    const all = this.store.get('reminders', [])
+    const idx = all.findIndex((r) => r.id === id)
+    if (idx === -1) return null
+
+    const updated: Reminder = { ...all[idx], status: 'completed' }
+    const next = [...all]
+    next[idx] = updated
+    this.store.set('reminders', next)
+    return updated
   }
 }

@@ -10,12 +10,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
  * `external` no build do Main: deps que NAO devem ser bundleadas dentro
  * do main.js. Ficam em node_modules e sao carregadas em runtime.
  *
- * Necessario pra `node-sqlite3-wasm` porque a lib usa __dirname (CJS) pra
- * encontrar o arquivo .wasm — e __dirname nao existe em ES modules.
- * Externalizando, o Node carrega o pacote como CJS de node_modules
- * onde __dirname funciona.
+ * electron-store eh ESM-only (v10) e tem dependencias internas (conf,
+ * dot-prop, etc) que esperam ser carregadas como modulos separados.
+ * Externalizar evita problemas de bundling com essas sub-deps.
  */
-const externalDeps = ['node-sqlite3-wasm']
+const externalDeps = ['electron-store']
 
 export default defineConfig({
   resolve: {
