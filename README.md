@@ -162,10 +162,9 @@ Isso é normal pra apps open source pequenos. O código está aberto neste repo 
 
 ## Apoiar o projeto
 
-O NotifyMe é gratuito e open source. Se ele te ajuda no dia a dia, considere uma doação:
+O NotifyMe é gratuito e open source. Se ele te ajuda no dia a dia, considere uma doação via PIX:
 
-- **[GitHub Sponsors](https://github.com/sponsors/BelmanteGu)** — recorrente mensal
-- **[Ko-fi](https://ko-fi.com/belmantegu)** — pagamento único
+- **Chave PIX (CNPJ)**: `65.516.621/0001-78`
 
 ## Contribuir
 
