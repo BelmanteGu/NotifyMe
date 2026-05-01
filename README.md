@@ -32,14 +32,22 @@ App desktop pequeno e gratuito, com **3 funcionalidades** integradas:
 - Start / Pause / Reset
 - Anti-drift (usa `Date.now() - startedAt` em vez de `+= ms`)
 
+### 🪟 Widget flutuante
+- Janela pequena always-on-top que aparece quando timer/cronômetro estão rodando
+- Mostra o tempo em tempo real, mesmo com janela main minimizada
+- Movível, redimensionável, posição persistida entre sessões
+- Toggle em **Configurações** pra ligar/desligar
+
 ## Outras features
 
 - **Tray icon + auto-start com Windows** — app fica rodando em background, lembretes disparam mesmo com janela fechada
 - **Title bar customizada** estilo macOS (sem barra cinza nativa do Windows)
 - **Tema light/dark** com toggle no app, detecta preferência do SO no primeiro boot
 - **Tudo offline** — dados em `%APPDATA%\notifyme\data.json`, zero login, zero servidor
-- **Modais de confirmação nativos** do sistema (`dialog.showMessageBox`, não `window.confirm()` feio)
+- **ConfirmDialog estilo Windows 11 Fluent** (HTML/Vue glassmorphism, não o dialog antigo do Electron)
 - **Dropdown custom** com Teleport (sempre por cima de modais, sem corte de overflow)
+- **Switch toggle iOS-like** nas configurações
+- **Configurações persistentes** (`%APPDATA%\notifyme\settings.json` — escrita atômica)
 
 ## Stack
 
@@ -110,13 +118,15 @@ A pasta [`docs/`](docs/) tem documentação densa e didática de cada parte do p
 - [07 — Tray e auto-start](docs/07-tray-e-autostart.md) — como rodar em background
 - [08 — Build e release](docs/08-build-e-release.md) — empacotando e publicando
 - [10 — Componentes UI](docs/10-componentes-ui.md) — Select, Sidebar, TitleBar, etc
-- [11 — Timer e Cronômetro](docs/11-timer-e-cronometro.md) — composables singleton + Web Audio
+- [11 — Timer e Cronômetro](docs/11-timer-e-cronometro.md) — services no Main + Web Audio
 - [12 — Title bar customizada](docs/12-title-bar-customizada.md) — frame:false + IPC controls
+- [13 — Widget flutuante](docs/13-floating-widget.md) — BrowserWindow always-on-top
 
 ### Decisões arquiteturais (ADRs)
 - [001 — electron-store em vez de SQLite](docs/decisoes/001-electron-store-vs-sqlite.md)
 - [002 — frame:false e título customizado](docs/decisoes/002-frame-false-titulo-customizado.md)
 - [003 — Select customizado em vez de nativo](docs/decisoes/003-select-customizado.md)
+- [004 — Widget flutuante e state no Main](docs/decisoes/004-floating-widget.md)
 
 ## SmartScreen warning ao instalar
 

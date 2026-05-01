@@ -5,6 +5,7 @@ import Sidebar, { type View } from '@/components/Sidebar.vue'
 import RemindersView from '@/views/RemindersView.vue'
 import TimerView from '@/views/TimerView.vue'
 import StopwatchView from '@/views/StopwatchView.vue'
+import SettingsView from '@/views/SettingsView.vue'
 import AboutModal from '@/components/AboutModal.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
@@ -26,6 +27,7 @@ const aboutOpen = ref(false)
         <RemindersView v-if="currentView === 'reminders'" />
         <TimerView v-else-if="currentView === 'timer'" />
         <StopwatchView v-else-if="currentView === 'stopwatch'" />
+        <SettingsView v-else-if="currentView === 'settings'" />
       </main>
     </div>
 

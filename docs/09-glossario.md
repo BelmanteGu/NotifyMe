@@ -408,6 +408,25 @@ nativa mas mantém área pra controles customizados. Combinado com
 
 ---
 
+### Settings (configurações)
+
+Preferências do app persistidas em `%APPDATA%\notifyme\settings.json`
+via electron-store separado do `data.json` dos lembretes. Composable
+`useSettings()` no Renderer faz IPC pro Main pra ler/escrever.
+Atualmente expõe `showWidget`, `widgetX/Y/Width/Height`. Veja
+[13-floating-widget.md](13-floating-widget.md).
+
+---
+
+### Switch (toggle)
+
+Componente UI custom em `src/components/ui/Switch.vue` que substitui
+`<input type="checkbox">` nativo (visual feio). Trilho colorido com
+bola que desliza, estilo iOS/macOS. Cor primary quando ativo. Aceita
+`v-model:` boolean.
+
+---
+
 ### Tray (system tray / bandeja do sistema)
 
 A área no canto inferior direito do Windows com ícones pequenos
@@ -448,3 +467,14 @@ Versão do compilador TypeScript que entende `.vue`. Rodamos no
 
 Bloco de configuração de uma `BrowserWindow` que controla o que aquela
 janela pode fazer. Onde definimos `preload`, `contextIsolation`, etc.
+
+---
+
+### Widget flutuante
+
+Janela pequena always-on-top que mostra o tempo do timer ou cronômetro
+quando algum está rodando. Aparece automaticamente, é movível e
+redimensionável, posição persistida em settings. Toggle em
+**Configurações → Widget flutuante**. Veja
+[13-floating-widget.md](13-floating-widget.md) e
+[ADR 004](decisoes/004-floating-widget.md).

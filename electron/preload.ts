@@ -10,6 +10,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { Reminder, ReminderInput } from '../src/types/reminder'
 import type { TimerState, StopwatchState } from '../src/types/timer'
+import type { Settings } from '../src/types/settings'
 import type { NotifyMeAPI } from '../src/types/api'
 
 const api: NotifyMeAPI = {
@@ -77,6 +78,20 @@ const api: NotifyMeAPI = {
     },
   },
 
+  settings: {
+    getAll: (): Promise<Settings> => ipcRenderer.invoke('settings:getAll'),
+    set: <K extends keyof Settings>(key: K, value: Settings[K]) =>
+      ipcRenderer.invoke('settings:set', key, value),
+    onChanged: (callback) => {
+      const handler = (_event: unknown, settings: Settings) =>
+        callback(settings)
+      ipcRenderer.on('settings:changed', handler)
+      return () => {
+        ipcRenderer.removeListener('settings:changed', handler)
+      }
+    },
+  },
+
   system: {
     openExternal: (url: string): Promise<void> =>
       ipcRenderer.invoke('system:openExternal', url),
@@ -86,6 +101,7 @@ const api: NotifyMeAPI = {
       toggleMaximize: () => ipcRenderer.send('window:toggleMaximize'),
       close: () => ipcRenderer.send('window:close'),
       isMaximized: () => ipcRenderer.invoke('window:isMaximized'),
+      showMain: () => ipcRenderer.send('window:showMain'),
       onMaximizedChanged: (callback) => {
         const handler = (_event: unknown, value: boolean) => callback(value)
         ipcRenderer.on('window:maximizedChanged', handler)

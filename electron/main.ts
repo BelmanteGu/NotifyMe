@@ -1,17 +1,16 @@
 /**
  * NotifyMe — Processo Principal (Main Process)
  *
- * Cria janelas, abre o store JSON, registra handlers IPC,
- * dispara o scheduler de lembretes, mantém o tray icon e a
- * title bar customizada. Mantém também o estado do Timer e
- * Cronômetro (em Main process pra sobreviver a hide/destroy
- * de janela e permitir múltiplas janelas sincronizadas).
+ * Cria janelas, abre stores (lembretes + settings), registra handlers IPC,
+ * dispara o scheduler de lembretes, gerencia Timer/Cronômetro,
+ * mantém o tray icon, a title bar customizada e o widget flutuante.
  */
 
 import { app, BrowserWindow, dialog, ipcMain, shell, Menu } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getStore } from './store'
+import { getSettings } from './store/settings'
 import { RemindersService } from './services/reminders'
 import { registerRemindersIPC } from './ipc/reminders'
 import { ReminderScheduler } from './scheduler'
@@ -20,7 +19,10 @@ import { StopwatchService } from './services/stopwatch'
 import { showReminderNotification } from './services/notifications'
 import { openAlertWindow, closeAllAlertWindows } from './windows/alertWindow'
 import { openTimerAlertWindow, closeTimerAlertWindow } from './windows/timerAlertWindow'
+import { openWidgetWindow, closeWidgetWindow, isWidgetOpen } from './windows/widgetWindow'
 import { createTray, destroyTray } from './tray'
+import type Store from 'electron-store'
+import type { Settings } from '../src/types/settings'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -38,6 +40,7 @@ let mainWin: BrowserWindow | null = null
 let scheduler: ReminderScheduler | null = null
 let timerService: TimerService | null = null
 let stopwatchService: StopwatchService | null = null
+let settingsStore: Store<Settings> | null = null
 const alertWindows = new Map<string, BrowserWindow>()
 
 let isQuitting = false
@@ -50,13 +53,7 @@ if (!gotLock) {
   app.quit()
 } else {
   app.on('second-instance', () => {
-    if (mainWin) {
-      if (mainWin.isMinimized()) mainWin.restore()
-      mainWin.show()
-      mainWin.focus()
-    } else {
-      createMainWindow()
-    }
+    showMainWindow()
   })
 
   app.on('window-all-closed', () => {
@@ -72,6 +69,7 @@ if (!gotLock) {
     stopwatchService?.destroy()
     closeAllAlertWindows(alertWindows)
     closeTimerAlertWindow()
+    closeWidgetWindow()
     destroyTray()
   })
 
@@ -125,7 +123,16 @@ function createMainWindow() {
   }
 }
 
-/** Empurra um evento IPC pra TODAS as BrowserWindows abertas. */
+function showMainWindow() {
+  if (!mainWin || mainWin.isDestroyed()) {
+    createMainWindow()
+    return
+  }
+  if (mainWin.isMinimized()) mainWin.restore()
+  mainWin.show()
+  mainWin.focus()
+}
+
 function broadcastToAllWindows(channel: string, ...args: unknown[]) {
   for (const w of BrowserWindow.getAllWindows()) {
     if (!w.isDestroyed()) {
@@ -138,9 +145,55 @@ function notifyRendererChanged() {
   broadcastToAllWindows('reminders:changed')
 }
 
+// ─── Widget orchestration ─────────────────────────────────────────
+let lastWidgetMode: 'timer' | 'stopwatch' | null = null
+
+function getCurrentRunningMode(): 'timer' | 'stopwatch' | null {
+  if (timerService?.getState().isRunning) return 'timer'
+  if (stopwatchService?.getState().isRunning) return 'stopwatch'
+  return null
+}
+
+/**
+ * Decide se o widget deve estar aberto. Chamado em:
+ *   - Cada tick do timer/stopwatch (idempotente — só age se mudou)
+ *   - Mudança da setting `showWidget`
+ */
+function updateWidgetVisibility() {
+  const settings = settingsStore?.store
+  if (!settings) return
+
+  const desiredMode = settings.showWidget ? getCurrentRunningMode() : null
+
+  if (desiredMode === lastWidgetMode) return // sem mudança
+
+  if (desiredMode === null) {
+    closeWidgetWindow()
+  } else if (!isWidgetOpen()) {
+    openWidgetWindow({
+      rendererDist: RENDERER_DIST,
+      devServerUrl: VITE_DEV_SERVER_URL,
+      preloadPath: PRELOAD_PATH,
+      settings,
+      saveSettings: (partial) => {
+        if (!settingsStore) return
+        for (const [k, v] of Object.entries(partial)) {
+          settingsStore.set(k as keyof Settings, v as never)
+        }
+      },
+    })
+  }
+  // Se modo trocou (timer ↔ stopwatch) com widget já aberto, o
+  // WidgetView se auto-adapta via composables — não precisa reabrir
+
+  lastWidgetMode = desiredMode
+}
+
 function initialize() {
   try {
     Menu.setApplicationMenu(null)
+
+    settingsStore = getSettings()
 
     const store = getStore()
     const remindersService = new RemindersService(store)
@@ -161,11 +214,12 @@ function initialize() {
 
     registerRemindersIPC(remindersService, scheduler, notifyRendererChanged)
 
-    // ─── Timer + Cronômetro: state no Main ─────────────────────
+    // ─── Timer + Cronômetro ──────────────────────────────
     timerService = new TimerService()
-    timerService.on('tick', (state) =>
+    timerService.on('tick', (state) => {
       broadcastToAllWindows('timer:tick', state)
-    )
+      updateWidgetVisibility()
+    })
     timerService.on('complete', () => {
       openTimerAlertWindow({
         rendererDist: RENDERER_DIST,
@@ -175,9 +229,10 @@ function initialize() {
     })
 
     stopwatchService = new StopwatchService()
-    stopwatchService.on('tick', (state) =>
+    stopwatchService.on('tick', (state) => {
       broadcastToAllWindows('stopwatch:tick', state)
-    )
+      updateWidgetVisibility()
+    })
 
     // IPC do timer
     ipcMain.handle('timer:getState', () => timerService?.getState())
@@ -194,7 +249,21 @@ function initialize() {
     ipcMain.on('stopwatch:pause', () => stopwatchService?.pause())
     ipcMain.on('stopwatch:reset', () => stopwatchService?.reset())
 
-    // System: openExternal pra abrir links no navegador padrão
+    // IPC settings
+    ipcMain.handle('settings:getAll', () => settingsStore?.store)
+    ipcMain.handle(
+      'settings:set',
+      (_event, key: keyof Settings, value: unknown) => {
+        if (!settingsStore) return
+        settingsStore.set(key, value as never)
+        broadcastToAllWindows('settings:changed', settingsStore.store)
+        if (key === 'showWidget') {
+          updateWidgetVisibility()
+        }
+      }
+    )
+
+    // System: openExternal
     ipcMain.handle('system:openExternal', (_event, url: string) => {
       if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
         console.warn('[ipc] openExternal recusou URL invalida:', url)
@@ -203,19 +272,16 @@ function initialize() {
       shell.openExternal(url)
     })
 
-    // Window controls — usados pela TitleBar customizada
-    ipcMain.on('window:minimize', () => {
-      mainWin?.minimize()
-    })
+    // Window controls
+    ipcMain.on('window:minimize', () => mainWin?.minimize())
     ipcMain.on('window:toggleMaximize', () => {
       if (!mainWin) return
       if (mainWin.isMaximized()) mainWin.unmaximize()
       else mainWin.maximize()
     })
-    ipcMain.on('window:close', () => {
-      mainWin?.close()
-    })
+    ipcMain.on('window:close', () => mainWin?.close())
     ipcMain.handle('window:isMaximized', () => mainWin?.isMaximized() ?? false)
+    ipcMain.on('window:showMain', () => showMainWindow())
 
     createMainWindow()
     createTray({

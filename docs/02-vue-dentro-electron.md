@@ -31,34 +31,43 @@ src/
 │
 ├── components/                   ← componentes reutilizáveis
 │   ├── AboutModal.vue            ← dialog "Sobre" com doação
+│   ├── ConfirmDialog.vue         ← dialog de confirmação Win11 Fluent
 │   ├── EmptyState.vue            ← estado vazio com variants
 │   ├── ReminderCard.vue          ← card de lembrete na lista
 │   ├── ReminderModal.vue         ← modal de criar lembrete
-│   ├── Sidebar.vue               ← navegação lateral (3 views)
+│   ├── Sidebar.vue               ← navegação lateral (4 views)
 │   ├── ThemeToggle.vue           ← botão Sun/Moon
 │   ├── TitleBar.vue              ← barra de título customizada
 │   └── ui/
-│       └── Select.vue            ← Select customizado com Teleport
+│       ├── Select.vue            ← Select com Teleport (acima de modais)
+│       └── Switch.vue            ← toggle iOS-like
 │
 ├── views/                        ← páginas (uma por section da sidebar)
 │   ├── RemindersView.vue         ← lista de lembretes (tabs Pendentes/Concluídos)
-│   ├── TimerView.vue             ← countdown timer com presets + custom
+│   ├── TimerView.vue             ← countdown timer com presets + custom MM:SS
 │   ├── StopwatchView.vue         ← cronômetro contando pra cima
-│   └── AlertView.vue             ← janela de alerta persistente (separada)
+│   ├── SettingsView.vue          ← Configurações (toggle widget, etc)
+│   ├── AlertView.vue             ← janela de alerta de lembrete (separada)
+│   ├── TimerAlertView.vue        ← janela de alarme do timer (loop)
+│   └── WidgetView.vue            ← widget flutuante always-on-top
 │
 ├── composables/                  ← state + lógica reativa
 │   ├── useTheme.ts               ← light/dark + localStorage
 │   ├── useReminders.ts           ← CRUD via IPC + push refresh
-│   ├── useTimer.ts               ← countdown singleton
-│   └── useStopwatch.ts           ← stopwatch singleton
+│   ├── useTimer.ts               ← stub IPC pro TimerService no Main
+│   ├── useStopwatch.ts           ← stub IPC pro StopwatchService no Main
+│   ├── useSettings.ts            ← stub IPC pra configurações
+│   └── useConfirm.ts             ← dialog de confirmação singleton
 │
 ├── types/                        ← tipos TypeScript compartilhados
 │   ├── reminder.ts               ← Reminder, Recurrence, etc
+│   ├── timer.ts                  ← TimerState, StopwatchState
+│   ├── settings.ts               ← Settings + DEFAULT_SETTINGS
 │   └── api.ts                    ← NotifyMeAPI (window.notifyme contract)
 │
 └── utils/                        ← funções puras
-    ├── formatDate.ts             ← masks BR + relative format
-    └── sound.ts                  ← Web Audio API chimes
+    ├── formatDate.ts             ← masks BR (DD/MM/AAAA, HH:MM, MM:SS) + relative format
+    └── sound.ts                  ← Web Audio API chimes + alarme em loop
 ```
 
 A organização segue o padrão do Cliloop: `components/`, `composables/`,

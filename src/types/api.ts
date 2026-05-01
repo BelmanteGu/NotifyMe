@@ -1,5 +1,6 @@
 import type { Reminder, ReminderInput } from './reminder'
 import type { TimerState, StopwatchState } from './timer'
+import type { Settings } from './settings'
 
 /**
  * Contrato da API exposta pelo preload em window.notifyme.
@@ -58,17 +59,29 @@ export interface NotifyMeAPI {
     onTick: (callback: (state: StopwatchState) => void) => () => void
   }
 
+  /**
+   * Configurações persistidas — vivem em settings.json no Main.
+   * Composables usam useSettings() pra acessar/mutar.
+   */
+  settings: {
+    getAll: () => Promise<Settings>
+    set: <K extends keyof Settings>(key: K, value: Settings[K]) => Promise<void>
+    onChanged: (callback: (settings: Settings) => void) => () => void
+  }
+
   system: {
     /** Abre uma URL HTTP/HTTPS no navegador padrão do usuário (não no Electron). */
     openExternal: (url: string) => Promise<void>
 
-    /** Controles da janela main (usados pela title bar customizada). */
+    /** Controles da janela main (usados pela title bar customizada e pelo widget). */
     window: {
       minimize: () => void
       toggleMaximize: () => void
       close: () => void
       isMaximized: () => Promise<boolean>
       onMaximizedChanged: (callback: (value: boolean) => void) => () => void
+      /** Mostra/foca a janela main (usado pelo botão "Abrir" do widget). */
+      showMain: () => void
     }
   }
 }

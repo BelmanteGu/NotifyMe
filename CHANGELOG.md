@@ -7,6 +7,35 @@ versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Adicionado (Feature B — widget flutuante)
+- **Widget flutuante** (`src/views/WidgetView.vue`) — BrowserWindow pequena always-on-top que aparece quando timer ou cronômetro estão rodando. Mostra o tempo em tempo real, movível e redimensionável.
+- **Configurações** (`src/views/SettingsView.vue`) — nova page na sidebar com toggle "Mostrar widget quando algo estiver rodando".
+- **Settings store** (`electron/store/settings.ts`) — persiste em `%APPDATA%\notifyme\settings.json` (separado dos lembretes). `showWidget`, `widgetX/Y/Width/Height`.
+- **Composable `useSettings`** — stub IPC pro state de configurações no Main.
+- **Switch toggle** (`src/components/ui/Switch.vue`) — toggle iOS-like, substitui `<input type="checkbox">` nativo.
+- **Refactor: state do Timer/Stopwatch movido pro Main process** (`electron/services/timer.ts`, `stopwatch.ts`). Pré-requisito do widget — pra múltiplas janelas verem o mesmo state. Composables Renderer viraram stubs IPC. Tick é broadcast pra todas as BrowserWindows abertas.
+- **Botão "Abrir NotifyMe"** no widget — chama `system.window.showMain` que mostra/foca a janela main.
+- **Auto-orquestração** do widget no Main: `updateWidgetVisibility()` reage a ticks dos services e ao toggle do setting.
+- 2 docs novos:
+  - `docs/13-floating-widget.md` — implementação completa
+  - `docs/decisoes/004-floating-widget.md` — ADR
+
+### Adicionado (Feature A — alarme do timer)
+- **Janela persistente always-on-top do timer** (`src/views/TimerAlertView.vue`) — quando o timer zera, abre janela com botão "Parar alarme" (mesmo padrão dos lembretes).
+- **Alarme em loop** (`startTimerAlarm` / `stopTimerAlarm` em `src/utils/sound.ts`) — toca padrão de 3 notas (A5+A5+C#6) a cada 1.4s até user parar. Auto-stop após 2 min como segurança.
+- **TimerAlertWindow** (`electron/windows/timerAlertWindow.ts`) — singleton, frame:false, alwaysOnTop.
+
+### Adicionado (ConfirmDialog Fluent)
+- **ConfirmDialog** estilo Windows 11 Fluent (`src/components/ConfirmDialog.vue`) — HTML/Vue com glassmorphism, substitui `dialog.showMessageBox` nativo do Electron (que tinha visual antigo Win32).
+- **Composable `useConfirm`** — singleton com promise-based API.
+- **Removido** IPC `system:confirm` e handler do dialog nativo.
+
+### Adicionado (Timer com segundos + centralização)
+- **Timer aceita `MM:SS`** — input personalizado vira mask. Digite `30` → `0:30`, `130` → `1:30`, `9000` → `90:00`.
+- **`setSeconds()`** no `useTimer` (clamp 1-99:59).
+- **Helpers** `formatMinSec` e `parseMinSec` em `formatDate.ts`.
+- **Centralização vertical** em `TimerView` e `StopwatchView` (RemindersView mantém alinhamento ao topo).
+
 ### Adicionado
 - **Timer (Pomodoro)** com presets 5/10/15/25/50/90 min e input personalizado (1-999 min). Display circular com progress ring SVG. Som de alarme ao zerar (3 notas geradas via Web Audio API).
 - **Cronômetro** com precisão de centésimos. Anti-drift via `Date.now() - startedAt`.
