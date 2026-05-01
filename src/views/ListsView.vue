@@ -478,9 +478,10 @@ function formatDateBR(iso: string): string {
 
 <style scoped>
 /*
- * Página de caderno — papel pautado com margem vermelha.
- * Light: papel off-white #fffef7 com linhas azul-acinzentado.
- * Dark: papel escuro #1c1c1f com linhas mais sutis.
+ * Página de caderno — papel pautado com margem vermelha lateral.
+ * Acompanha o tema do app:
+ *   Light: papel off-white #fffef7 com linhas azul-acinzentado
+ *   Dark:  papel escuro #1c1c1f com linhas mais sutis
  */
 .task-list-page {
   position: relative;
