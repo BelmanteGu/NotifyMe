@@ -1,37 +1,19 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { Bell, Plus } from 'lucide-vue-next'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import ReminderCard from '@/components/ReminderCard.vue'
 import ReminderModal from '@/components/ReminderModal.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import type { Reminder, ReminderInput } from '@/types/reminder'
-import { mockReminders } from '@/data/mockReminders'
+import { useReminders } from '@/composables/useReminders'
 
 /**
- * Estado raiz do app na Fase 1.
- *
- * Os lembretes vivem em memória — nada é persistido. Reiniciou o app, sumiu.
- * Isso muda na Fase 2 (SQLite via IPC).
+ * Fase 2: lembretes vêm do SQLite via IPC.
+ * Toda mutação chama o Main process; UI atualiza otimisticamente
+ * com o resultado retornado.
  */
-const reminders = ref<Reminder[]>([...mockReminders])
+const { reminders, loading, error, create } = useReminders()
 const modalOpen = ref(false)
-
-const sortedReminders = computed(() =>
-  [...reminders.value].sort(
-    (a, b) => new Date(a.triggerAt).getTime() - new Date(b.triggerAt).getTime()
-  )
-)
-
-function handleSave(input: ReminderInput) {
-  const reminder: Reminder = {
-    ...input,
-    id: `r-${Date.now()}`,
-    status: 'pending',
-    createdAt: new Date().toISOString(),
-  }
-  reminders.value.push(reminder)
-}
 </script>
 
 <template>
@@ -69,17 +51,31 @@ function handleSave(input: ReminderInput) {
     <main class="flex-1 max-w-5xl mx-auto w-full px-6 py-8">
       <div class="mb-6 flex items-center justify-between">
         <h2 class="text-2xl font-bold font-heading">Meus lembretes</h2>
-        <span class="text-sm text-muted-foreground">
+        <span v-if="!loading" class="text-sm text-muted-foreground">
           {{ reminders.length }}
           {{ reminders.length === 1 ? 'lembrete' : 'lembretes' }}
         </span>
       </div>
 
-      <EmptyState v-if="reminders.length === 0" @create="modalOpen = true" />
+      <div
+        v-if="error"
+        class="mb-4 p-4 rounded-md border border-destructive bg-destructive/10 text-destructive text-sm"
+      >
+        Erro ao carregar lembretes: {{ error }}
+      </div>
+
+      <div v-if="loading" class="text-center text-muted-foreground py-12">
+        Carregando…
+      </div>
+
+      <EmptyState
+        v-else-if="reminders.length === 0"
+        @create="modalOpen = true"
+      />
 
       <div v-else class="space-y-3">
         <ReminderCard
-          v-for="reminder in sortedReminders"
+          v-for="reminder in reminders"
           :key="reminder.id"
           :reminder="reminder"
         />
@@ -90,11 +86,14 @@ function handleSave(input: ReminderInput) {
       <div
         class="max-w-5xl mx-auto px-6 py-4 text-xs text-muted-foreground flex justify-between"
       >
-        <span>NotifyMe v0.0.1 — Fase 1</span>
+        <span>NotifyMe v0.0.1 — Fase 2</span>
         <span>github.com/BelmanteGu/notifyme</span>
       </div>
     </footer>
 
-    <ReminderModal v-model:open="modalOpen" @save="handleSave" />
+    <ReminderModal
+      v-model:open="modalOpen"
+      @save="(input) => create(input)"
+    />
   </div>
 </template>

@@ -1,28 +1,23 @@
 /**
  * NotifyMe — Processo Principal (Main Process)
  *
- * Este arquivo roda no ambiente Node.js do Electron.
- * É ele quem cria janelas, acessa sistema de arquivos, banco de dados,
- * notificações nativas e tudo que precisa de privilégios do SO.
+ * Cria janelas, abre o banco SQLite, registra handlers IPC.
+ * Roda no ambiente Node.js do Electron.
  *
- * Veja docs/01-arquitetura-electron.md para entender a divisão
- * entre Main e Renderer.
+ * Veja docs/01-arquitetura-electron.md e docs/03-ipc.md.
  */
 
 import { app, BrowserWindow } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { getDatabase, closeDatabase } from './db'
+import { RemindersService } from './services/reminders'
+import { registerRemindersIPC } from './ipc/reminders'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// Diretórios do projeto:
-//   APP_ROOT/
-//   ├─ dist-electron/   ← código do Main + Preload compilado
-//   └─ dist/            ← código do Renderer (Vue) compilado
 process.env.APP_ROOT = path.join(__dirname, '..')
 
-// URL do servidor de dev do Vite quando rodando em desenvolvimento.
-// Em produção (.exe instalado), carrega do disco em vez de localhost.
 export const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron')
 export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
@@ -42,18 +37,12 @@ function createWindow() {
     title: 'NotifyMe',
     backgroundColor: '#0D0D0E',
     webPreferences: {
-      // Ponte segura entre Renderer e Main.
-      // Veja docs/03-ipc.md.
       preload: path.join(__dirname, 'preload.mjs'),
-      // Isolamento de contexto: Renderer NÃO acessa Node diretamente.
-      // Tudo que precisa do SO passa pelo Preload via IPC.
       contextIsolation: true,
       nodeIntegration: false,
     },
   })
 
-  // Em desenvolvimento, carrega do servidor Vite (hot reload).
-  // Em produção, carrega o HTML construído.
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL)
     win.webContents.openDevTools()
@@ -62,20 +51,32 @@ function createWindow() {
   }
 }
 
-// macOS: app continua rodando mesmo sem janelas abertas.
-// Windows/Linux: fecha o app quando todas as janelas fecham.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
+    closeDatabase()
     app.quit()
     win = null
   }
 })
 
-// macOS: clicar no ícone do dock recria a janela se não houver nenhuma.
+app.on('before-quit', () => {
+  closeDatabase()
+})
+
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
   }
 })
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  // 1. Abre o banco e roda migrations
+  const db = getDatabase()
+
+  // 2. Cria os services e registra os handlers IPC
+  const remindersService = new RemindersService(db)
+  registerRemindersIPC(remindersService)
+
+  // 3. Abre a janela
+  createWindow()
+})

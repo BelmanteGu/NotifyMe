@@ -1,5 +1,7 @@
 /// <reference types="vite-plugin-electron/electron-env" />
 
+import type { Reminder, ReminderInput } from '../src/types/reminder'
+
 declare namespace NodeJS {
   interface ProcessEnv {
     APP_ROOT: string
@@ -7,11 +9,18 @@ declare namespace NodeJS {
   }
 }
 
-// Tipos da API exposta no preload, disponíveis no Renderer
+// Tipos da API exposta no preload, disponíveis no Renderer via window.notifyme
 interface NotifyMeAPI {
-  ping: () => Promise<string>
+  reminders: {
+    list: () => Promise<Reminder[]>
+    create: (input: ReminderInput) => Promise<Reminder>
+    delete: (id: string) => Promise<boolean>
+    markCompleted: (id: string) => Promise<Reminder | null>
+  }
 }
 
-interface Window {
-  notifyme: NotifyMeAPI
+declare global {
+  interface Window {
+    notifyme: NotifyMeAPI
+  }
 }

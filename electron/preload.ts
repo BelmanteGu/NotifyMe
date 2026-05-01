@@ -2,21 +2,32 @@
  * NotifyMe — Preload Script
  *
  * Roda ANTES do Renderer (Vue) carregar.
- * É a ponte segura entre o Renderer (que NÃO tem acesso a Node)
- * e o Main Process (que TEM acesso a Node).
- *
- * Tudo que o Vue precisar do SO (criar lembrete, ler do banco, etc)
- * vai ser exposto aqui via window.notifyme.* — e implementado no Main.
+ * Ponte segura entre o Renderer e o Main: expõe APIs específicas
+ * via window.notifyme — o Renderer não toca direto em Node, IPC
+ * ou banco.
  *
  * Veja docs/03-ipc.md.
  */
 
 import { contextBridge, ipcRenderer } from 'electron'
+import type { Reminder, ReminderInput } from '../src/types/reminder'
 
-// API exposta ao Renderer via window.notifyme
-contextBridge.exposeInMainWorld('notifyme', {
-  // Placeholder — vai ser preenchido na Fase 2 (SQLite/CRUD).
-  // Exemplo de uso futuro:
-  //   await window.notifyme.createReminder({ title: 'Pagar conta', ... })
-  ping: () => ipcRenderer.invoke('ping'),
-})
+const api = {
+  reminders: {
+    list: (): Promise<Reminder[]> =>
+      ipcRenderer.invoke('reminders:list'),
+
+    create: (input: ReminderInput): Promise<Reminder> =>
+      ipcRenderer.invoke('reminders:create', input),
+
+    delete: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke('reminders:delete', id),
+
+    markCompleted: (id: string): Promise<Reminder | null> =>
+      ipcRenderer.invoke('reminders:markCompleted', id),
+  },
+}
+
+contextBridge.exposeInMainWorld('notifyme', api)
+
+export type NotifyMeAPI = typeof api
