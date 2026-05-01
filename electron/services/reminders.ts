@@ -87,4 +87,13 @@ export class RemindersService {
     }
     return removed
   }
+
+  /**
+   * Adia o lembrete em N minutos a partir de AGORA (não do triggerAt original).
+   * Usado pelo botão "Adiar 10 min" da janela de alerta.
+   */
+  snooze(id: string, minutes: number): Reminder | null {
+    const newTriggerAt = new Date(Date.now() + minutes * 60_000).toISOString()
+    return this.updateTriggerAt(id, newTriggerAt)
+  }
 }

@@ -17,6 +17,12 @@ export interface NotifyMeAPI {
     /** Apaga todos os lembretes com status 'completed'. Retorna quantos foram apagados. */
     clearCompleted: () => Promise<number>
 
+    /** Busca um único lembrete pelo id. Usado pela janela de alerta. */
+    getById: (id: string) => Promise<Reminder | null>
+
+    /** Adia um lembrete em N minutos (atualiza triggerAt). Re-agenda no scheduler. */
+    snooze: (id: string, minutes: number) => Promise<Reminder | null>
+
     /**
      * Subscreve a eventos de mudança vindos do Main.
      * Usado quando o scheduler dispara um recorrente e atualiza o
