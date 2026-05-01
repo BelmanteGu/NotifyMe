@@ -2,7 +2,10 @@
  * NotifyMe — Processo Principal (Main Process)
  *
  * Cria janelas, abre o store JSON, registra handlers IPC,
- * dispara o scheduler, mantém o tray icon e a title bar customizada.
+ * dispara o scheduler de lembretes, mantém o tray icon e a
+ * title bar customizada. Mantém também o estado do Timer e
+ * Cronômetro (em Main process pra sobreviver a hide/destroy
+ * de janela e permitir múltiplas janelas sincronizadas).
  */
 
 import { app, BrowserWindow, dialog, ipcMain, shell, Menu } from 'electron'
@@ -12,6 +15,8 @@ import { getStore } from './store'
 import { RemindersService } from './services/reminders'
 import { registerRemindersIPC } from './ipc/reminders'
 import { ReminderScheduler } from './scheduler'
+import { TimerService } from './services/timer'
+import { StopwatchService } from './services/stopwatch'
 import { showReminderNotification } from './services/notifications'
 import { openAlertWindow, closeAllAlertWindows } from './windows/alertWindow'
 import { openTimerAlertWindow, closeTimerAlertWindow } from './windows/timerAlertWindow'
@@ -31,6 +36,8 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 
 let mainWin: BrowserWindow | null = null
 let scheduler: ReminderScheduler | null = null
+let timerService: TimerService | null = null
+let stopwatchService: StopwatchService | null = null
 const alertWindows = new Map<string, BrowserWindow>()
 
 let isQuitting = false
@@ -61,6 +68,8 @@ if (!gotLock) {
   app.on('before-quit', () => {
     isQuitting = true
     scheduler?.stopAll()
+    timerService?.destroy()
+    stopwatchService?.destroy()
     closeAllAlertWindows(alertWindows)
     closeTimerAlertWindow()
     destroyTray()
@@ -84,8 +93,6 @@ function createMainWindow() {
     title: 'NotifyMe',
     backgroundColor: '#0D0D0E',
     show: true,
-    // Frame customizado: tira a barra de título nativa do Windows.
-    // O Renderer desenha a TitleBar com botões custom (TitleBar.vue).
     frame: false,
     titleBarStyle: 'hidden',
     autoHideMenuBar: true,
@@ -103,8 +110,6 @@ function createMainWindow() {
     }
   })
 
-  // Notifica o Renderer quando o estado de maximizado muda
-  // (pra a title bar atualizar o ícone do botão maximize/restore).
   mainWin.on('maximize', () => {
     mainWin?.webContents.send('window:maximizedChanged', true)
   })
@@ -120,12 +125,17 @@ function createMainWindow() {
   }
 }
 
-function notifyRendererChanged() {
+/** Empurra um evento IPC pra TODAS as BrowserWindows abertas. */
+function broadcastToAllWindows(channel: string, ...args: unknown[]) {
   for (const w of BrowserWindow.getAllWindows()) {
     if (!w.isDestroyed()) {
-      w.webContents.send('reminders:changed')
+      w.webContents.send(channel, ...args)
     }
   }
+}
+
+function notifyRendererChanged() {
+  broadcastToAllWindows('reminders:changed')
 }
 
 function initialize() {
@@ -151,6 +161,39 @@ function initialize() {
 
     registerRemindersIPC(remindersService, scheduler, notifyRendererChanged)
 
+    // ─── Timer + Cronômetro: state no Main ─────────────────────
+    timerService = new TimerService()
+    timerService.on('tick', (state) =>
+      broadcastToAllWindows('timer:tick', state)
+    )
+    timerService.on('complete', () => {
+      openTimerAlertWindow({
+        rendererDist: RENDERER_DIST,
+        devServerUrl: VITE_DEV_SERVER_URL,
+        preloadPath: PRELOAD_PATH,
+      })
+    })
+
+    stopwatchService = new StopwatchService()
+    stopwatchService.on('tick', (state) =>
+      broadcastToAllWindows('stopwatch:tick', state)
+    )
+
+    // IPC do timer
+    ipcMain.handle('timer:getState', () => timerService?.getState())
+    ipcMain.on('timer:start', () => timerService?.start())
+    ipcMain.on('timer:pause', () => timerService?.pause())
+    ipcMain.on('timer:reset', () => timerService?.reset())
+    ipcMain.on('timer:setSeconds', (_event, seconds: number) =>
+      timerService?.setSeconds(seconds)
+    )
+
+    // IPC do cronômetro
+    ipcMain.handle('stopwatch:getState', () => stopwatchService?.getState())
+    ipcMain.on('stopwatch:start', () => stopwatchService?.start())
+    ipcMain.on('stopwatch:pause', () => stopwatchService?.pause())
+    ipcMain.on('stopwatch:reset', () => stopwatchService?.reset())
+
     // System: openExternal pra abrir links no navegador padrão
     ipcMain.handle('system:openExternal', (_event, url: string) => {
       if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
@@ -173,15 +216,6 @@ function initialize() {
       mainWin?.close()
     })
     ipcMain.handle('window:isMaximized', () => mainWin?.isMaximized() ?? false)
-
-    // Timer: abre janela de alarme persistente quando countdown zera
-    ipcMain.handle('timer:openAlert', () => {
-      openTimerAlertWindow({
-        rendererDist: RENDERER_DIST,
-        devServerUrl: VITE_DEV_SERVER_URL,
-        preloadPath: PRELOAD_PATH,
-      })
-    })
 
     createMainWindow()
     createTray({

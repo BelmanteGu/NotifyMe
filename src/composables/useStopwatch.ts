@@ -1,22 +1,22 @@
 import { ref, computed } from 'vue'
+import type { StopwatchState } from '@/types/timer'
 
 /**
- * Composable global do Cronômetro.
+ * Composable do Cronômetro — STUB IPC.
  *
- * Diferente do timer: aqui o tempo aumenta a partir de zero,
- * sem estado-alvo. Estado singleton (escopo do módulo) — continua
- * rodando ao trocar de view.
- *
- * Implementação: salvamos `startedAt` (Date.now() do início) e
- * computamos `elapsedMs = Date.now() - startedAt` no tick. Isso é
- * mais robusto que `elapsedMs += 100` porque corrige drift se o
- * navegador atrasa setInterval (que é comum em background tabs).
+ * Mesma estrutura do useTimer: state real no Main, Renderer só
+ * recebe ticks e dispara comandos. Tick a 50ms (20fps) — suficiente
+ * pra centésimos parecerem fluidos no display.
  */
 
 const elapsedMs = ref(0)
 const isRunning = ref(false)
-let startedAt = 0
-let intervalId: number | null = null
+let initialized = false
+
+function applyState(state: StopwatchState) {
+  elapsedMs.value = state.elapsedMs
+  isRunning.value = state.isRunning
+}
 
 const formattedTime = computed(() => {
   const total = elapsedMs.value
@@ -34,37 +34,22 @@ const formattedTime = computed(() => {
   )
 })
 
-function tick() {
-  elapsedMs.value = Date.now() - startedAt
-}
-
-function start() {
-  if (isRunning.value) return
-  startedAt = Date.now() - elapsedMs.value
-  isRunning.value = true
-  intervalId = window.setInterval(tick, 50) // 20fps — suficiente pra centésimos lisos
-}
-
-function pause() {
-  isRunning.value = false
-  if (intervalId !== null) {
-    clearInterval(intervalId)
-    intervalId = null
-  }
-}
-
-function reset() {
-  pause()
-  elapsedMs.value = 0
-}
-
 export function useStopwatch() {
+  if (!initialized) {
+    initialized = true
+    window.notifyme.stopwatch
+      .getState()
+      .then(applyState)
+      .catch((e) => console.error('[useStopwatch] getState failed:', e))
+    window.notifyme.stopwatch.onTick(applyState)
+  }
+
   return {
     elapsedMs,
     isRunning,
     formattedTime,
-    start,
-    pause,
-    reset,
+    start: () => window.notifyme.stopwatch.start(),
+    pause: () => window.notifyme.stopwatch.pause(),
+    reset: () => window.notifyme.stopwatch.reset(),
   }
 }

@@ -1,21 +1,31 @@
 import { ref, computed } from 'vue'
+import type { TimerState } from '@/types/timer'
 
 /**
- * Composable global do Timer (countdown).
+ * Composable do Timer — STUB IPC.
  *
- * Estado vive no escopo do módulo (singleton) — toda chamada de
- * useTimer() retorna o mesmo state. Isso garante que o timer continua
- * rodando mesmo quando o usuário troca pra outra view (Lembretes,
- * Cronômetro) e volta.
+ * O state real vive no Main process (electron/services/timer.ts).
+ * Este composable só:
+ *   1. Faz `getState()` na primeira vez pra hidratar os refs locais
+ *   2. Subscreve `onTick(state)` pra atualizar quando o Main muda
+ *   3. Expõe métodos start/pause/reset/setSeconds que enviam IPC
  *
- * Limitação: o timer roda no Renderer process. Se a janela main fechar
- * (closed/quit, não hide), o timer some. Hide preserva (Renderer fica vivo).
+ * Vantagens vs antiga implementação no Renderer:
+ *   - Timer continua rodando se a janela main for hidden
+ *   - Múltiplas janelas (futuro widget flutuante) sincronizadas
+ *   - Renderer destruído → reabre, faz getState e ressincroniza
  */
 
-const totalSeconds = ref(25 * 60) // default 25 min (Pomodoro clássico)
+const totalSeconds = ref(25 * 60)
 const remainingSeconds = ref(25 * 60)
 const isRunning = ref(false)
-let intervalId: number | null = null
+let initialized = false
+
+function applyState(state: TimerState) {
+  totalSeconds.value = state.totalSeconds
+  remainingSeconds.value = state.remainingSeconds
+  isRunning.value = state.isRunning
+}
 
 const formattedTime = computed(() => {
   const total = Math.max(0, remainingSeconds.value)
@@ -24,74 +34,34 @@ const formattedTime = computed(() => {
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
 })
 
-/** Progresso 0–100 — útil pra circular progress ring. */
 const progress = computed(() => {
   if (totalSeconds.value === 0) return 0
   const elapsed = totalSeconds.value - remainingSeconds.value
   return Math.min(100, (elapsed / totalSeconds.value) * 100)
 })
 
-function tick() {
-  remainingSeconds.value--
-  if (remainingSeconds.value <= 0) {
-    handleComplete()
-  }
-}
-
-function start() {
-  if (isRunning.value || remainingSeconds.value <= 0) return
-  isRunning.value = true
-  intervalId = window.setInterval(tick, 1000)
-}
-
-function pause() {
-  isRunning.value = false
-  if (intervalId !== null) {
-    clearInterval(intervalId)
-    intervalId = null
-  }
-}
-
-function reset() {
-  pause()
-  remainingSeconds.value = totalSeconds.value
-}
-
-function setMinutes(mins: number) {
-  setSeconds(mins * 60)
-}
-
-function setSeconds(seconds: number) {
-  pause()
-  // Clamp: mínimo 1s, máximo 99:59 (99 min 59s)
-  const clamped = Math.max(1, Math.min(99 * 60 + 59, Math.floor(seconds)))
-  totalSeconds.value = clamped
-  remainingSeconds.value = clamped
-}
-
-function handleComplete() {
-  pause()
-  remainingSeconds.value = 0
-
-  // Em vez de Notification + 3 beeps que somem em segundos, abre uma
-  // janela persistente always-on-top com som em loop até o usuário
-  // confirmar. Mesmo padrão dos lembretes — diferencial do app.
-  window.notifyme.timer.openAlert().catch((e) => {
-    console.error('[useTimer] failed to open alert window:', e)
-  })
-}
-
 export function useTimer() {
+  if (!initialized) {
+    initialized = true
+    window.notifyme.timer
+      .getState()
+      .then(applyState)
+      .catch((e) => console.error('[useTimer] getState failed:', e))
+    window.notifyme.timer.onTick(applyState)
+  }
+
   return {
     totalSeconds,
     remainingSeconds,
     isRunning,
     formattedTime,
     progress,
-    start,
-    pause,
-    reset,
-    setMinutes,
-    setSeconds,
+    start: () => window.notifyme.timer.start(),
+    pause: () => window.notifyme.timer.pause(),
+    reset: () => window.notifyme.timer.reset(),
+    setMinutes: (mins: number) =>
+      window.notifyme.timer.setSeconds(mins * 60),
+    setSeconds: (seconds: number) =>
+      window.notifyme.timer.setSeconds(seconds),
   }
 }

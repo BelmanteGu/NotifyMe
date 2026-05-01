@@ -1,4 +1,5 @@
 import type { Reminder, ReminderInput } from './reminder'
+import type { TimerState, StopwatchState } from './timer'
 
 /**
  * Contrato da API exposta pelo preload em window.notifyme.
@@ -33,12 +34,28 @@ export interface NotifyMeAPI {
     onChanged: (callback: () => void) => () => void
   }
 
+  /**
+   * Timer (countdown) — state vive no Main process. Renderer subscreve
+   * via onTick e dispara mudanças via start/pause/reset/setSeconds.
+   */
   timer: {
-    /**
-     * Abre a janela de alarme do timer (always-on-top com botão "Parar").
-     * Chamada por useTimer.handleComplete() quando o countdown zera.
-     */
-    openAlert: () => Promise<void>
+    getState: () => Promise<TimerState>
+    start: () => void
+    pause: () => void
+    reset: () => void
+    setSeconds: (seconds: number) => void
+    onTick: (callback: (state: TimerState) => void) => () => void
+  }
+
+  /**
+   * Cronômetro — mesmo padrão do timer.
+   */
+  stopwatch: {
+    getState: () => Promise<StopwatchState>
+    start: () => void
+    pause: () => void
+    reset: () => void
+    onTick: (callback: (state: StopwatchState) => void) => () => void
   }
 
   system: {

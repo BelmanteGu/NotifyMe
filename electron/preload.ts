@@ -9,6 +9,7 @@
 
 import { contextBridge, ipcRenderer } from 'electron'
 import type { Reminder, ReminderInput } from '../src/types/reminder'
+import type { TimerState, StopwatchState } from '../src/types/timer'
 import type { NotifyMeAPI } from '../src/types/api'
 
 const api: NotifyMeAPI = {
@@ -44,7 +45,36 @@ const api: NotifyMeAPI = {
   },
 
   timer: {
-    openAlert: (): Promise<void> => ipcRenderer.invoke('timer:openAlert'),
+    getState: (): Promise<TimerState> =>
+      ipcRenderer.invoke('timer:getState'),
+    start: () => ipcRenderer.send('timer:start'),
+    pause: () => ipcRenderer.send('timer:pause'),
+    reset: () => ipcRenderer.send('timer:reset'),
+    setSeconds: (seconds: number) =>
+      ipcRenderer.send('timer:setSeconds', seconds),
+    onTick: (callback) => {
+      const handler = (_event: unknown, state: TimerState) => callback(state)
+      ipcRenderer.on('timer:tick', handler)
+      return () => {
+        ipcRenderer.removeListener('timer:tick', handler)
+      }
+    },
+  },
+
+  stopwatch: {
+    getState: (): Promise<StopwatchState> =>
+      ipcRenderer.invoke('stopwatch:getState'),
+    start: () => ipcRenderer.send('stopwatch:start'),
+    pause: () => ipcRenderer.send('stopwatch:pause'),
+    reset: () => ipcRenderer.send('stopwatch:reset'),
+    onTick: (callback) => {
+      const handler = (_event: unknown, state: StopwatchState) =>
+        callback(state)
+      ipcRenderer.on('stopwatch:tick', handler)
+      return () => {
+        ipcRenderer.removeListener('stopwatch:tick', handler)
+      }
+    },
   },
 
   system: {
