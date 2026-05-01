@@ -1,0 +1,54 @@
+appId: com.belmantegu.notifyme
+productName: NotifyMe
+copyright: Copyright © 2026 BelmanteGu
+
+# Onde os instaladores e arquivos finais sao gerados
+directories:
+  output: release/${version}
+  buildResources: build
+
+# Arquivos que entram no .exe final
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+  - "!**/*.map"
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,readme.md,test,tests,__tests__,docs}"
+  - "!**/node_modules/*/*.{md,markdown}"
+  - "!**/.DS_Store"
+
+# Empacotamento ASAR — concatena os arquivos JS num único arquivo
+# pra inicialização mais rápida e (leve) ofuscamento
+asar: true
+
+# Configuracoes do Windows
+win:
+  # Target do icone — se build/icon.ico existir, usa.
+  # Senao, electron-builder pega o icone padrao do Electron.
+  # icon: build/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  requestedExecutionLevel: asInvoker
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+# Instalador NSIS — formato .exe que o usuario clica pra instalar
+nsis:
+  oneClick: false                          # Mostra wizard, nao instala silencioso
+  perMachine: false                        # Instala so pro usuario atual (sem UAC)
+  allowToChangeInstallationDirectory: true # Permite escolher pasta
+  deleteAppDataOnUninstall: false          # Preserva lembretes ao desinstalar
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: NotifyMe
+  installerLanguages:
+    - pt_BR
+    - en_US
+
+# Versao portable — .exe unico que roda sem instalar
+portable:
+  artifactName: ${productName}-${version}-portable.exe
