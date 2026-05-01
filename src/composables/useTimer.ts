@@ -58,9 +58,15 @@ function reset() {
 }
 
 function setMinutes(mins: number) {
+  setSeconds(mins * 60)
+}
+
+function setSeconds(seconds: number) {
   pause()
-  totalSeconds.value = Math.max(1, Math.min(600, mins)) * 60
-  remainingSeconds.value = totalSeconds.value
+  // Clamp: mínimo 1s, máximo 99:59 (99 min 59s)
+  const clamped = Math.max(1, Math.min(99 * 60 + 59, Math.floor(seconds)))
+  totalSeconds.value = clamped
+  remainingSeconds.value = clamped
 }
 
 function handleComplete() {
@@ -86,5 +92,6 @@ export function useTimer() {
     pause,
     reset,
     setMinutes,
+    setSeconds,
   }
 }

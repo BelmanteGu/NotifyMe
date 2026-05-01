@@ -71,6 +71,36 @@ export function maskTime(value: string): string {
 }
 
 /**
+ * Formata dígitos puros como MM:SS, alinhando os 2 últimos dígitos como segundos.
+ *
+ *   ""    → ""
+ *   "5"   → "0:05"
+ *   "30"  → "0:30"
+ *   "130" → "1:30"
+ *   "9000"→ "90:00"
+ */
+export function formatMinSec(digits: string): string {
+  const clean = digits.replace(/\D/g, '').slice(0, 4)
+  if (clean.length === 0) return ''
+  if (clean.length === 1) return `0:0${clean}`
+  if (clean.length === 2) return `0:${clean}`
+  return `${clean.slice(0, -2)}:${clean.slice(-2)}`
+}
+
+/**
+ * Parseia "MM:SS" pra total de segundos. Retorna null se inválido
+ * (formato errado, segundos >= 60).
+ */
+export function parseMinSec(value: string): number | null {
+  const match = value.match(/^(\d{1,2}):(\d{2})$/)
+  if (!match) return null
+  const m = parseInt(match[1], 10)
+  const s = parseInt(match[2], 10)
+  if (s >= 60) return null
+  return m * 60 + s
+}
+
+/**
  * Combina "DD/MM/AAAA" + "HH:MM" em ISO 8601.
  * Retorna `null` se o input estiver inválido (não tem 10 chars na data,
  * mês > 12, etc).
