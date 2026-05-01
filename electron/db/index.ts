@@ -37,7 +37,15 @@ export function getDatabase(): Database {
   console.log(`[db] opening SQLite at ${dbPath}`)
 
   db = new sqliteWasm.Database(dbPath)
+
+  // busy_timeout: se o BD estiver locked por outra conexao,
+  // espera ate 5s antes de dar erro em vez de falhar imediato.
+  // Cobre o caso comum de o vite-plugin-electron reiniciar o app
+  // em modo dev e a instancia anterior ainda nao ter fechado a conexao.
+  db.exec('PRAGMA busy_timeout = 5000')
+
   runMigrations(db)
+  console.log('[db] ready')
   return db
 }
 
