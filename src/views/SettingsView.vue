@@ -42,9 +42,9 @@ const { settings, set } = useSettings()
     <section class="glass rounded-lg p-6">
       <h3 class="text-base font-bold mb-2 tracking-tight">Sobre</h3>
       <p class="text-sm text-muted-foreground leading-relaxed">
-        O NotifyMe é open source (licença MIT) e roda 100% offline.
-        Todos os dados ficam no seu PC. Visite o repositório no GitHub
-        pra contribuir ou reportar problemas.
+        O NotifyMe é 100% gratuito e roda 100% offline. Todos os dados
+        ficam no seu PC. Visite o repositório no GitHub pra reportar
+        problemas ou conhecer o projeto.
       </p>
     </section>
   </div>
