@@ -65,4 +65,16 @@ export class RemindersService {
     this.store.set('reminders', next)
     return updated
   }
+
+  updateTriggerAt(id: string, triggerAt: string): Reminder | null {
+    const all = this.store.get('reminders', [])
+    const idx = all.findIndex((r) => r.id === id)
+    if (idx === -1) return null
+
+    const updated: Reminder = { ...all[idx], triggerAt }
+    const next = [...all]
+    next[idx] = updated
+    this.store.set('reminders', next)
+    return updated
+  }
 }

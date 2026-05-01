@@ -1,10 +1,10 @@
 /**
  * NotifyMe — Processo Principal (Main Process)
  *
- * Cria janelas, abre o store JSON, registra handlers IPC.
- * Roda no ambiente Node.js do Electron.
+ * Cria janelas, abre o store JSON, registra handlers IPC,
+ * dispara o scheduler de lembretes.
  *
- * Veja docs/01-arquitetura-electron.md e docs/03-ipc.md.
+ * Veja docs/01-arquitetura-electron.md, docs/03-ipc.md, docs/05-agendamento.md.
  */
 
 import { app, BrowserWindow, dialog } from 'electron'
@@ -13,6 +13,8 @@ import { fileURLToPath } from 'node:url'
 import { getStore } from './store'
 import { RemindersService } from './services/reminders'
 import { registerRemindersIPC } from './ipc/reminders'
+import { ReminderScheduler } from './scheduler'
+import { showReminderNotification } from './services/notifications'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -27,11 +29,8 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   : RENDERER_DIST
 
 let win: BrowserWindow | null = null
+let scheduler: ReminderScheduler | null = null
 
-/**
- * Single-instance lock: só uma instância do app por vez.
- * Tentativas de abrir uma segunda janela trazem foco pra primeira.
- */
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
   console.log('[main] another instance is already running, exiting')
@@ -46,6 +45,7 @@ if (!gotLock) {
 
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
+      scheduler?.stopAll()
       app.quit()
       win = null
     }
@@ -83,12 +83,33 @@ function createWindow() {
   }
 }
 
+function notifyRendererChanged() {
+  win?.webContents.send('reminders:changed')
+}
+
 function initialize() {
   try {
     const store = getStore()
     const remindersService = new RemindersService(store)
-    registerRemindersIPC(remindersService)
+
+    scheduler = new ReminderScheduler(
+      remindersService,
+      (reminder) => {
+        showReminderNotification(reminder, { mainWin: win })
+      },
+      notifyRendererChanged
+    )
+
+    registerRemindersIPC(remindersService, scheduler)
+
     createWindow()
+
+    // Espera a janela estar pronta antes de iniciar o scheduler
+    // (assim os triggers que dispararem imediatamente conseguem
+    // empurrar 'reminders:changed' pro Renderer)
+    win?.webContents.once('did-finish-load', () => {
+      scheduler?.start()
+    })
   } catch (error) {
     const err = error as Error
     console.error('[main] fatal initialization error:', err)

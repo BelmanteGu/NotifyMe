@@ -7,12 +7,7 @@ import ReminderModal from '@/components/ReminderModal.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { useReminders } from '@/composables/useReminders'
 
-/**
- * Fase 2: lembretes vêm do SQLite via IPC.
- * Toda mutação chama o Main process; UI atualiza otimisticamente
- * com o resultado retornado.
- */
-const { reminders, loading, error, create } = useReminders()
+const { reminders, loading, error, create, remove, markCompleted } = useReminders()
 const modalOpen = ref(false)
 </script>
 
@@ -53,7 +48,7 @@ const modalOpen = ref(false)
         <h2 class="text-2xl font-bold font-heading">Meus lembretes</h2>
         <span v-if="!loading" class="text-sm text-muted-foreground">
           {{ reminders.length }}
-          {{ reminders.length === 1 ? 'lembrete' : 'lembretes' }}
+          {{ reminders.length === 1 ? 'pendente' : 'pendentes' }}
         </span>
       </div>
 
@@ -78,6 +73,8 @@ const modalOpen = ref(false)
           v-for="reminder in reminders"
           :key="reminder.id"
           :reminder="reminder"
+          @mark-completed="(id) => markCompleted(id)"
+          @delete="(id) => remove(id)"
         />
       </div>
     </main>
@@ -86,7 +83,7 @@ const modalOpen = ref(false)
       <div
         class="max-w-5xl mx-auto px-6 py-4 text-xs text-muted-foreground flex justify-between"
       >
-        <span>NotifyMe v0.0.1 — Fase 2</span>
+        <span>NotifyMe v0.0.1 — Fase 3</span>
         <span>github.com/BelmanteGu/notifyme</span>
       </div>
     </footer>

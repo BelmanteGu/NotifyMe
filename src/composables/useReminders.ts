@@ -4,11 +4,13 @@ import type { Reminder, ReminderInput } from '@/types/reminder'
 /**
  * Composable que envelopa as chamadas IPC do domínio "reminders".
  *
- * O Vue NUNCA fala com SQLite direto. Sempre passa por window.notifyme.reminders.*,
- * que é exposto pelo preload e implementado no Main process.
+ * Usa estado global compartilhado (refs no escopo do módulo). Qualquer
+ * componente que chame useReminders() vê a mesma lista — mantendo a UI
+ * consistente em diferentes pontos da árvore.
  *
- * Mantém uma cópia reativa dos lembretes em memória pra UI ficar
- * instantânea — depois de cada mutação atualiza o cache local.
+ * Subscreve a `reminders:changed` empurrado pelo Main quando o scheduler
+ * dispara um recorrente e atualiza triggerAt em background. Sem essa
+ * subscrição, a UI mostraria timestamps desatualizados.
  */
 
 const reminders = ref<Reminder[]>([])
@@ -20,6 +22,10 @@ const sortedReminders = computed(() =>
   [...reminders.value].sort(
     (a, b) => new Date(a.triggerAt).getTime() - new Date(b.triggerAt).getTime()
   )
+)
+
+const pendingReminders = computed(() =>
+  sortedReminders.value.filter((r) => r.status === 'pending')
 )
 
 async function refresh() {
@@ -62,10 +68,15 @@ export function useReminders() {
   if (!initialized) {
     initialized = true
     refresh()
+    // Listener pro push do Main (scheduler avançou triggerAt de recorrente)
+    window.notifyme.reminders.onChanged(() => {
+      refresh()
+    })
   }
 
   return {
-    reminders: sortedReminders,
+    reminders: pendingReminders,
+    allReminders: sortedReminders,
     loading,
     error,
     refresh,

@@ -3,16 +3,16 @@
  *
  * Roda ANTES do Renderer (Vue) carregar.
  * Ponte segura entre o Renderer e o Main: expõe APIs específicas
- * via window.notifyme — o Renderer não toca direto em Node, IPC
- * ou banco.
+ * via window.notifyme.
  *
  * Veja docs/03-ipc.md.
  */
 
 import { contextBridge, ipcRenderer } from 'electron'
 import type { Reminder, ReminderInput } from '../src/types/reminder'
+import type { NotifyMeAPI } from '../src/types/api'
 
-const api = {
+const api: NotifyMeAPI = {
   reminders: {
     list: (): Promise<Reminder[]> =>
       ipcRenderer.invoke('reminders:list'),
@@ -25,9 +25,15 @@ const api = {
 
     markCompleted: (id: string): Promise<Reminder | null> =>
       ipcRenderer.invoke('reminders:markCompleted', id),
+
+    onChanged: (callback: () => void): (() => void) => {
+      const handler = () => callback()
+      ipcRenderer.on('reminders:changed', handler)
+      return () => {
+        ipcRenderer.removeListener('reminders:changed', handler)
+      }
+    },
   },
 }
 
 contextBridge.exposeInMainWorld('notifyme', api)
-
-export type NotifyMeAPI = typeof api
