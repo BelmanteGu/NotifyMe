@@ -619,112 +619,196 @@
       margin-right: auto;
     }
 
-    /* ====================== SHOWCASE GALLERY ====================== */
+    /* ====================== SHOWCASE GALLERY (Recordly-like) ====================== */
+    /*
+     * Padrão Recordly:
+     *   - Background pure black na seção (override do gradient da página)
+     *   - Cada feature é stack vertical centralizado: tag + título + sub + imagem grande
+     *   - Imagem dominante (até 1100px), border-radius generoso, sem padding wrapper
+     *   - Animação de entrada por scroll: opacity 0→1 + translateY(60px)→0 + scale(0.96)→1
+     *   - Easing custom (cubic-bezier(0.16, 1, 0.3, 1)) com duration longa (1s+)
+     *   - Glow radial atrás da imagem que pulsa suave
+     */
+    #telas {
+      background: #0A0908;
+      color: #F5F5F4;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Glow radial sutil de fundo na seção inteira */
+    #telas::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 50% 0%, rgba(249, 115, 22, 0.08), transparent 60%),
+        radial-gradient(ellipse 60% 40% at 50% 100%, rgba(249, 115, 22, 0.06), transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    #telas .container { position: relative; z-index: 1; }
+
+    /* Override do section-head dentro de #telas pra fundo escuro */
+    #telas .section-head h2 { color: #F5F5F4; }
+    #telas .section-head p { color: rgba(245, 245, 244, 0.55); }
+
     .showcase {
       display: flex;
       flex-direction: column;
-      gap: 96px;
-    }
-    @media (max-width: 720px) {
-      .showcase { gap: 72px; }
+      gap: clamp(80px, 14vh, 160px);
+      perspective: 1200px;
     }
 
     .showcase-row {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 32px;
+      display: flex;
+      flex-direction: column;
       align-items: center;
-    }
-    @media (min-width: 900px) {
-      .showcase-row {
-        grid-template-columns: 1fr 1fr;
-        gap: 64px;
-      }
-      /* Zigue-zague: linhas pares têm texto à direita, ímpares à esquerda */
-      .showcase-row:nth-child(even) .showcase-img { order: 2; }
-    }
-
-    .showcase-img {
-      position: relative;
-      border-radius: 24px;
-      overflow: hidden;
-      background: linear-gradient(135deg, hsl(var(--primary) / 0.08), transparent);
-      padding: 14px;
-      border: 1px solid hsl(var(--border) / 0.6);
-      transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
-    }
-    .showcase-img:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 30px 60px -16px hsl(var(--primary) / 0.25);
-      border-color: hsl(var(--primary) / 0.35);
-    }
-    .showcase-img img {
-      display: block;
+      text-align: center;
+      gap: 28px;
+      max-width: 1100px;
+      margin: 0 auto;
       width: 100%;
-      height: auto;
-      border-radius: 14px;
-      box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.4);
-      border: 1px solid hsl(var(--border) / 0.5);
+
+      /* Estado inicial — escondido e deslocado pra animação de entrada */
+      opacity: 0;
+      transform: translateY(60px) scale(0.96);
+      transition:
+        opacity 1.1s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+    .showcase-row.revealed {
+      opacity: 1;
+      transform: translateY(0) scale(1);
     }
 
-    .showcase-text { min-width: 0; }
+    .showcase-text {
+      max-width: 640px;
+    }
 
     .showcase-tag {
       display: inline-flex;
       align-items: center;
       gap: 8px;
       padding: 6px 14px;
-      background: hsl(var(--accent));
-      color: hsl(var(--accent-foreground));
+      background: rgba(249, 115, 22, 0.12);
+      color: #FB923C;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      margin-bottom: 18px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(249, 115, 22, 0.25);
     }
-    .showcase-tag svg { width: 14px; height: 14px; }
+    .showcase-tag svg { width: 13px; height: 13px; }
 
     .showcase-text h3 {
-      font-size: clamp(26px, 3.2vw, 36px);
+      font-family: 'Outfit', 'Inter', sans-serif;
+      font-size: clamp(28px, 4.2vw, 48px);
       font-weight: 700;
-      margin-bottom: 16px;
-      line-height: 1.2;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      margin-bottom: 18px;
+      color: #F5F5F4;
     }
     .showcase-text > p {
-      font-size: 16px;
-      line-height: 1.7;
-      color: hsl(var(--muted-foreground));
-      margin: 0 0 20px;
+      font-size: clamp(15px, 1.4vw, 17px);
+      line-height: 1.65;
+      color: rgba(245, 245, 244, 0.6);
+      margin: 0;
+      max-width: 580px;
+      margin-left: auto;
+      margin-right: auto;
     }
     .showcase-text > p strong {
-      color: hsl(var(--foreground));
+      color: #F5F5F4;
       font-weight: 600;
     }
+
+    /* Bullets discretos abaixo da descrição (chips/pills inline, não lista) */
     .showcase-bullets {
       list-style: none;
       padding: 0;
-      margin: 0;
-      display: grid;
-      gap: 10px;
+      margin: 22px 0 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
     }
     .showcase-bullets li {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      font-size: 14.5px;
-      color: hsl(var(--muted-foreground));
-      line-height: 1.55;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      font-size: 13px;
+      color: rgba(245, 245, 244, 0.7);
     }
     .showcase-bullets li::before {
       content: "";
-      width: 18px;
-      height: 18px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #FB923C;
       flex-shrink: 0;
-      margin-top: 2px;
-      background: hsl(var(--primary));
-      mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>") center/contain no-repeat;
-      -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>") center/contain no-repeat;
+    }
+
+    /* Frame da imagem — protagonista visual */
+    .showcase-img {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      border-radius: clamp(16px, 2vw, 24px);
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow:
+        0 50px 100px -20px rgba(0, 0, 0, 0.7),
+        0 30px 60px -30px rgba(249, 115, 22, 0.25),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: translateZ(0);
+    }
+    .showcase-img:hover {
+      transform: translateY(-6px) translateZ(0);
+      box-shadow:
+        0 70px 130px -20px rgba(0, 0, 0, 0.8),
+        0 40px 80px -30px rgba(249, 115, 22, 0.4),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+    }
+
+    /* Glow sutil ao redor da imagem que pulsa */
+    .showcase-img::before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      border-radius: inherit;
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.3), transparent 50%, rgba(249, 115, 22, 0.15));
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.6s ease;
+      filter: blur(20px);
+    }
+    .showcase-img:hover::before {
+      opacity: 1;
+    }
+
+    .showcase-img img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: inherit;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .showcase-row {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
     }
 
     /* ====================== KANBAN SOON ====================== */
@@ -856,6 +940,154 @@
     }
     .pix-copy.copied {
       background: linear-gradient(135deg, #16a34a, #15803d);
+    }
+
+    /* ====================== TRANSFORM SCROLL (Apple-like) ====================== */
+    /*
+     * Padrão Apple: fundo preto puro, tipografia gigante, monocromático
+     * com 1 acento (laranja), crossfade simples só de opacity, easing
+     * custom slow-out, letter-spacing apertado, single statement por
+     * "frame". 5 frames empilhados absolutamente no mesmo lugar — só um
+     * é visível por vez via opacity.
+     *
+     * Track de 600vh: 1 viewport pra entrada + 4 pra transição entre os
+     * 5 frames + 1 pra saída. Cada transição cruza 1 viewport de scroll.
+     */
+    .transform-track {
+      position: relative;
+      height: 600vh;
+      background: #000;
+      color: #fff;
+      /* Override do gradient de fundo da página inteira */
+      isolation: isolate;
+    }
+    .transform-pin {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      width: 100%;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: #000;
+    }
+    .transform-stage {
+      position: relative;
+      width: 100%;
+      max-width: 1400px;
+      padding: 0 clamp(24px, 5vw, 80px);
+      text-align: center;
+    }
+
+    .transform-eyebrow {
+      position: absolute;
+      top: clamp(40px, 8vh, 80px);
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.45);
+    }
+
+    /*
+     * Stack absoluto de frames. Cada frame ocupa o mesmo espaço, só
+     * opacity muda. Permite crossfade limpo sem reflow.
+     */
+    .transform-frames {
+      position: relative;
+      width: 100%;
+      min-height: clamp(160px, 26vh, 280px);
+    }
+
+    .transform-frame {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(14px, 2vh, 22px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity;
+    }
+    .transform-frame.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .transform-headline {
+      font-family: 'Outfit', 'Inter', sans-serif;
+      font-size: clamp(36px, 7vw, 92px);
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1;
+      max-width: 18ch;
+    }
+    .transform-headline.neg {
+      color: rgba(255, 255, 255, 0.32);
+      font-weight: 600;
+    }
+    .transform-headline.pos {
+      color: #fff;
+    }
+    .transform-headline .hl {
+      background: linear-gradient(135deg, #F97316, #FB8A3C);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+
+    .transform-sub {
+      font-size: clamp(13px, 1.4vw, 17px);
+      color: rgba(255, 255, 255, 0.55);
+      max-width: 540px;
+      letter-spacing: -0.005em;
+    }
+
+    /* Indicador de progresso minimalista no rodapé (estilo Apple Vision/iPhone) */
+    .transform-rail {
+      position: absolute;
+      bottom: clamp(40px, 8vh, 70px);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 2;
+    }
+    .transform-rail-pill {
+      width: 26px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+      position: relative;
+    }
+    .transform-rail-pill::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: #fff;
+      transform: scaleX(var(--fill, 0));
+      transform-origin: left center;
+      transition: transform 0.15s linear;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .transform-track { height: auto; }
+      .transform-pin { position: static; height: auto; padding: 100px 0; }
+      .transform-frames { min-height: auto; }
+      .transform-frame {
+        position: static;
+        opacity: 1;
+        margin-bottom: 56px;
+      }
+      .transform-frame.is-neg { display: none; }
+      .transform-rail { display: none; }
     }
 
     /* ====================== FOOTER ====================== */
@@ -1019,6 +1251,61 @@
       </div>
     </div>
   </header>
+
+  <!-- ====================== TRANSFORM SCROLL (Apple-like) ====================== -->
+  <section class="transform-track" id="transform" aria-label="De caos pra controle">
+    <div class="transform-pin">
+      <span class="transform-eyebrow" aria-hidden="true">Antes &nbsp;·&nbsp; Depois</span>
+
+      <div class="transform-stage">
+        <div class="transform-frames">
+
+          <!-- Frame 0: Negativo -->
+          <div class="transform-frame is-neg" data-frame="0">
+            <h2 class="transform-headline neg">Eu esqueço<br />o que importa.</h2>
+            <p class="transform-sub">Anotações que somem. Promessas no vento.</p>
+          </div>
+
+          <!-- Frame 1: Positivo (responde ao 0) -->
+          <div class="transform-frame is-pos" data-frame="1">
+            <h2 class="transform-headline pos">Eu <span class="hl">lembro</span><br />do que importa.</h2>
+            <p class="transform-sub">Lembretes que ficam até você confirmar.</p>
+          </div>
+
+          <!-- Frame 2: Negativo -->
+          <div class="transform-frame is-neg" data-frame="2">
+            <h2 class="transform-headline neg">Os prazos<br />sempre passam.</h2>
+            <p class="transform-sub">A notificação somiu antes de você ler.</p>
+          </div>
+
+          <!-- Frame 3: Positivo -->
+          <div class="transform-frame is-pos" data-frame="3">
+            <h2 class="transform-headline pos">Os prazos<br /><span class="hl">não passam mais</span>.</h2>
+            <p class="transform-sub">O alerta insiste, na sua tela, até virar “Concluído”.</p>
+          </div>
+
+          <!-- Frame 4: Negativo -->
+          <div class="transform-frame is-neg" data-frame="4">
+            <h2 class="transform-headline neg">Sua cabeça<br />carrega tudo.</h2>
+            <p class="transform-sub">E acaba esquecendo metade.</p>
+          </div>
+
+          <!-- Frame 5: Positivo -->
+          <div class="transform-frame is-pos" data-frame="5">
+            <h2 class="transform-headline pos">Sua cabeça<br /><span class="hl">fica leve</span>.</h2>
+            <p class="transform-sub">O app lembra. Você só executa.</p>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="transform-rail" aria-hidden="true">
+        <span class="transform-rail-pill" data-pill="0"></span>
+        <span class="transform-rail-pill" data-pill="1"></span>
+        <span class="transform-rail-pill" data-pill="2"></span>
+      </div>
+    </div>
+  </section>
 
   <!-- ====================== CORE FEATURES ====================== -->
   <section id="features">
@@ -1242,151 +1529,139 @@
 
         <!-- Lembretes -->
         <article class="showcase-row">
-          <div class="showcase-img">
-            <img src="screens/lembretes.png" alt="Tela de Lembretes do NotifyMe" loading="lazy" />
-          </div>
           <div class="showcase-text">
             <span class="showcase-tag">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
               Lembretes
             </span>
-            <h3>O lembrete que fica até você confirmar</h3>
+            <h3>O lembrete que fica<br />até você confirmar.</h3>
             <p>
-              Crie quantos lembretes quiser, com hora, descrição e recorrência.
-              Quando dispara, abre uma janela <strong>always-on-top sem botão de fechar</strong> —
-              só "Concluído" ou "Adiar 10 min". Esquecer não é mais opção.
+              Janela <strong>always-on-top sem botão de fechar</strong>. Só
+              "Concluído" ou "Adiar 10 min". Esquecer não é mais opção.
             </p>
             <ul class="showcase-bullets">
-              <li>Recorrência: uma vez, todo dia ou toda semana</li>
-              <li>Pendentes atrasados destacados em vermelho</li>
-              <li>Visual glassmorphism estilo macOS Sequoia</li>
-              <li>Empty state amigável quando não tem nada agendado</li>
+              <li>Diário, semanal ou único</li>
+              <li>Atrasados em vermelho</li>
+              <li>Visual estilo macOS</li>
             </ul>
+          </div>
+          <div class="showcase-img">
+            <img src="screens/lembretes.png" alt="Tela de Lembretes do NotifyMe" loading="lazy" />
           </div>
         </article>
 
         <!-- Listas -->
         <article class="showcase-row">
-          <div class="showcase-img">
-            <img src="screens/listas.png" alt="Tela de Listas estilo caderno" loading="lazy" />
-          </div>
           <div class="showcase-text">
             <span class="showcase-tag">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
               Listas / To-do
             </span>
-            <h3>Caderno digital pra checklist diária</h3>
+            <h3>Um caderno digital<br />pra checklist diária.</h3>
             <p>
-              Cada lista é uma <strong>página estilo folha pautada</strong>, com data, título
-              e itens checáveis. Navegue entre páginas como num caderno físico.
+              Cada lista é uma <strong>página pautada</strong> com data, título e itens checáveis.
               Mercado, tarefas, viagem — tudo organizado por dia.
             </p>
             <ul class="showcase-bullets">
-              <li>Marcar/desmarcar com um clique</li>
-              <li>Exportar pra Markdown ou imagem PNG</li>
-              <li>Importar listas em Markdown de volta</li>
-              <li>Histórico de páginas anteriores acessível</li>
+              <li>Marcar com um clique</li>
+              <li>Exportar Markdown / PNG</li>
+              <li>Histórico navegável</li>
             </ul>
+          </div>
+          <div class="showcase-img">
+            <img src="screens/listas.png" alt="Tela de Listas estilo caderno" loading="lazy" />
           </div>
         </article>
 
         <!-- Notas -->
         <article class="showcase-row">
-          <div class="showcase-img">
-            <img src="screens/notas.png" alt="Tela de Notas com post-its coloridos" loading="lazy" />
-          </div>
           <div class="showcase-text">
             <span class="showcase-tag">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg>
               Notas
             </span>
-            <h3>Post-its visuais, arrastáveis, com cor própria</h3>
+            <h3>Post-its visuais,<br />arrastáveis, coloridos.</h3>
             <p>
-              Pra aquela ideia rápida que você quer ver enquanto trabalha. <strong>Cada nota
-              tem sua cor</strong> — organize visualmente como num quadro de cortiça.
-              Arraste, redimensione e posicione livre no canvas.
+              Pra aquela ideia rápida que você quer ver enquanto trabalha.
+              <strong>Cada nota tem sua cor</strong> — organize como num quadro de cortiça.
             </p>
             <ul class="showcase-bullets">
-              <li>Drag-and-drop livre no board</li>
-              <li>Cores sólidas pra categorizar visualmente</li>
-              <li>Edição inline, salva automático</li>
-              <li>Fundo dot-grid pra alinhamento natural</li>
+              <li>Drag-and-drop livre</li>
+              <li>Cores pra categorizar</li>
+              <li>Salva automático</li>
             </ul>
+          </div>
+          <div class="showcase-img">
+            <img src="screens/notas.png" alt="Tela de Notas com post-its coloridos" loading="lazy" />
           </div>
         </article>
 
         <!-- Timer -->
         <article class="showcase-row">
-          <div class="showcase-img">
-            <img src="screens/timer.png" alt="Tela do Timer Pomodoro" loading="lazy" />
-          </div>
           <div class="showcase-text">
             <span class="showcase-tag">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/><path d="M9 1h6"/></svg>
               Timer / Pomodoro
             </span>
-            <h3>Pomodoro com display circular animado</h3>
+            <h3>Pomodoro com display<br />circular animado.</h3>
             <p>
               Presets de <strong>5, 10, 15, 25, 50 e 90 minutos</strong> ou tempo personalizado
-              de 1 a 999 minutos. Display circular com progress ring que esvazia conforme
-              o tempo passa. Som ao zerar gerado via Web Audio API — sem arquivo externo.
+              de 1 a 999 minutos. Som ao zerar via Web Audio API — sem arquivo externo.
             </p>
             <ul class="showcase-bullets">
-              <li>Input MM:SS personalizado pra qualquer duração</li>
-              <li>Continua rodando minimizado ou em background</li>
-              <li>Notifica visualmente e com som ao zerar</li>
-              <li>Reset com um clique pra começar de novo</li>
+              <li>Input MM:SS personalizado</li>
+              <li>Roda em background</li>
+              <li>Notifica com som</li>
             </ul>
+          </div>
+          <div class="showcase-img">
+            <img src="screens/timer.png" alt="Tela do Timer Pomodoro" loading="lazy" />
           </div>
         </article>
 
         <!-- Cronômetro -->
         <article class="showcase-row">
-          <div class="showcase-img">
-            <img src="screens/cronometro.png" alt="Tela do Cronômetro" loading="lazy" />
-          </div>
           <div class="showcase-text">
             <span class="showcase-tag">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 13V8"/><path d="M9 1h6"/><path d="m17.5 7.5 1.5-1.5"/></svg>
               Cronômetro
             </span>
-            <h3>Precisão de centésimos, sem drift</h3>
+            <h3>Precisão de centésimos,<br />sem drift.</h3>
             <p>
               Cronometragem progressiva com <strong>precisão de centésimos de segundo</strong>.
-              Usa <code>Date.now()</code> em vez de acumular ms — assim não erra mesmo
-              rodando por horas. Continua contando minimizado.
+              Usa <code>Date.now()</code> em vez de acumular ms — não erra rodando por horas.
             </p>
             <ul class="showcase-bullets">
-              <li>Start, Pause e Reset com atalho rápido</li>
-              <li>Display grande, legível à distância</li>
-              <li>Estado "Pausado" claramente sinalizado</li>
-              <li>Anti-drift real — pode rodar a noite inteira</li>
+              <li>Start, Pause, Reset</li>
+              <li>Anti-drift real</li>
+              <li>Continua minimizado</li>
             </ul>
+          </div>
+          <div class="showcase-img">
+            <img src="screens/cronometro.png" alt="Tela do Cronômetro" loading="lazy" />
           </div>
         </article>
 
         <!-- Configurações + Widget -->
         <article class="showcase-row">
-          <div class="showcase-img">
-            <img src="screens/configuracoes.png" alt="Tela de Configurações" loading="lazy" />
-          </div>
           <div class="showcase-text">
             <span class="showcase-tag">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               Configurações + Widget
             </span>
-            <h3>Widget flutuante sempre por cima</h3>
+            <h3>Widget flutuante<br />sempre por cima.</h3>
             <p>
-              Uma <strong>janelinha always-on-top</strong> mostra o timer ou cronômetro rodando,
-              mesmo com o app minimizado ou outra janela em foco. Aparece automático
-              quando algo está ativo, some quando ambos param.
+              Uma <strong>janelinha always-on-top</strong> com o timer ou cronômetro rodando,
+              mesmo com o app minimizado. Aparece automático, some quando para.
             </p>
             <ul class="showcase-bullets">
-              <li>Move e redimensiona livremente na tela</li>
-              <li>Aparece e some sozinho conforme o estado</li>
-              <li>Não rouba foco — você continua no que estava fazendo</li>
-              <li>Pode ser desligado nas configurações</li>
+              <li>Move e redimensiona livre</li>
+              <li>Não rouba foco</li>
+              <li>Toggle nas configurações</li>
             </ul>
+          </div>
+          <div class="showcase-img">
+            <img src="screens/configuracoes.png" alt="Tela de Configurações" loading="lazy" />
           </div>
         </article>
 
@@ -1502,6 +1777,138 @@
           btn.classList.remove('copied');
         }, 2000);
       });
+    })();
+  </script>
+
+  <script>
+    /**
+     * Transform scroll Apple-style.
+     *
+     * Estratégia:
+     *   - 6 frames empilhados absolutamente (3 pares neg/pos)
+     *   - Track de 600vh; sticky pin de 100vh
+     *   - Progress global 0..1 = quanto do track já passou pelo topo
+     *   - Mapeio o progress em 6 segmentos. O frame N fica visível
+     *     quando segment(N) está ativo. Há um pequeno gap entre
+     *     segmentos pra crossfade não ficar 2 frames com opacity alta
+     *     ao mesmo tempo (limpo e Apple-like).
+     *   - Rail de 3 pills indica posição entre os 3 PARES (não 6 frames)
+     *
+     * Sem dependências. requestAnimationFrame throttle.
+     */
+    (function () {
+      const track = document.querySelector('.transform-track');
+      const frames = document.querySelectorAll('.transform-frame');
+      const pills = document.querySelectorAll('.transform-rail-pill');
+      if (!track || frames.length === 0) return;
+
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reducedMotion) {
+        frames.forEach((f) => f.classList.add('visible'));
+        pills.forEach((p) => p.style.setProperty('--fill', '1'));
+        return;
+      }
+
+      const N = frames.length; // 6
+      const PAIRS = pills.length; // 3
+      let ticking = false;
+
+      function clamp(v, min, max) {
+        return Math.min(Math.max(v, min), max);
+      }
+
+      function update() {
+        const rect = track.getBoundingClientRect();
+        const trackHeight = rect.height;
+        const viewportH = window.innerHeight;
+        const scrolled = -rect.top;
+        const totalScrollable = trackHeight - viewportH;
+        const globalP = clamp(scrolled / totalScrollable, 0, 1);
+
+        // Cada frame ocupa 1/N do progresso. Frame N visível quando
+        // globalP está no seu segmento [N/N, (N+1)/N].
+        // Pequena dead zone no início e fim do segmento pro crossfade
+        // ficar limpo (transition CSS faz o resto).
+        const segmentSize = 1 / N;
+        // Ajuste: começa frame 0 antes pro user ver algo já no início,
+        // e termina frame último depois pra ele permanecer visível na saída.
+        const adjusted = clamp((globalP - 0.05) / 0.9, 0, 0.999);
+        const activeIdx = Math.min(N - 1, Math.floor(adjusted / segmentSize));
+
+        frames.forEach((frame, idx) => {
+          frame.classList.toggle('visible', idx === activeIdx);
+        });
+
+        // Rail: cada pill representa 1 PAR (2 frames). Fill cresce
+        // continuamente conforme progress dentro daquele par.
+        pills.forEach((pill, idx) => {
+          const pairStart = (idx * 2) * segmentSize;
+          const pairEnd = ((idx * 2) + 2) * segmentSize;
+          const pairP = clamp((adjusted - pairStart) / (pairEnd - pairStart), 0, 1);
+          pill.style.setProperty('--fill', String(pairP));
+        });
+
+        ticking = false;
+      }
+
+      function onScroll() {
+        if (!ticking) {
+          requestAnimationFrame(update);
+          ticking = true;
+        }
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll, { passive: true });
+      update();
+    })();
+  </script>
+
+  <script>
+    /**
+     * Reveal-on-scroll padrão Recordly/Framer:
+     *   - Elementos com .showcase-row começam invisíveis (opacity 0,
+     *     translateY 60px, scale 0.96)
+     *   - Quando entram na viewport (50% visível), recebem .revealed
+     *     que aciona transição suave (1.1s, cubic-bezier easeOutExpo)
+     *   - Stagger sutil: cada row entra com 80ms de delay sobre a anterior
+     *
+     * IntersectionObserver é mais leve que scroll listener — browser
+     * dispara só quando interseção muda.
+     */
+    (function () {
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const rows = document.querySelectorAll('.showcase-row');
+      if (rows.length === 0) return;
+
+      if (reducedMotion) {
+        rows.forEach((r) => r.classList.add('revealed'));
+        return;
+      }
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              // Stagger: delay baseado no índice DOM da row dentro do showcase
+              const row = entry.target;
+              const parent = row.parentElement;
+              const idx = parent ? Array.from(parent.children).indexOf(row) : 0;
+              row.style.transitionDelay = `${Math.min(idx, 3) * 80}ms`;
+              row.classList.add('revealed');
+              observer.unobserve(row);
+            }
+          });
+        },
+        {
+          // Trigger quando 18% do elemento está visível — começa cedo o
+          // suficiente pra animação acabar perto de quando o user já está olhando
+          threshold: 0.18,
+          rootMargin: '0px 0px -10% 0px',
+        }
+      );
+
+      rows.forEach((row) => observer.observe(row));
     })();
   </script>
 
